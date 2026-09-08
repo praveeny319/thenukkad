@@ -1,0 +1,1661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nukkad — Your Neighbourhood Marketplace</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav id="nav">
+  <div class="nav-logo" onclick="openNukkadStory()" style="cursor:pointer;">Nukkad<span class="nav-logo-dot">·</span></div>
+  <div class="nav-actions">
+    <button class="nav-link" onclick="showPg('market')" style="display:none">Explore</button>
+    <button class="nav-cta" id="nav-create-btn" onclick="handleCreateClick()" style="display:none">+ Create Store</button>
+    <button class="nav-cta" id="nav-login-btn" onclick="openAuthModal('login')">Log In</button>
+    <button class="nav-avatar" id="nav-av-btn" onclick="openPanel()" title="My Account">?</button>
+  </div>
+</nav>
+
+<!-- ════ LANDING ════ -->
+<div class="pg on" id="pg-home">
+  <div class="hero">
+    <div>
+      <div class="hero-eyebrow">🇮🇳 Built for India's home sellers</div>
+      <h1 class="hero-title serif">Apni dukaan. <em>Apna nukkad.</em></h1>
+      <p class="hero-body">Create a beautiful store profile in 5 minutes. Get your own link to share everywhere. Let customers in your neighbourhood discover you — and order directly on WhatsApp.</p>
+      <div class="hero-btns">
+        <button class="btn-primary" onclick="startCreate()">Create Your Store Free →</button>
+        <button class="btn-ghost" onclick="showPg('market')" style="display:none">Browse Stores</button>
+      </div>
+      <div class="hero-stats">
+        <div class="stat-item"><div class="stat-num serif">5 min</div><div class="stat-label">To go live</div></div>
+        <div class="stat-item"><div class="stat-num serif">1 link</div><div class="stat-label">Share anywhere</div></div>
+        <div class="stat-item"><div class="stat-num serif">₹0</div><div class="stat-label">Free to start</div></div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="hero-card-stack">
+        <div class="hcard hcard-left">
+          <div class="hcard-cover" style="background:linear-gradient(135deg,#E8F4EA,#C2DEC8)">🧁</div>
+          <div class="hcard-body"><div class="hcard-name">Asha's Farshan</div><div class="hcard-tag">🥨 Snacks & Namkeen · Mumbai</div></div>
+        </div>
+        <div class="hcard hcard-main">
+          <div class="hcard-cover" style="background:linear-gradient(135deg,#E8F0F4,#C8DCCC)">🌿</div>
+          <div class="hcard-body">
+            <div class="hcard-name">Priya's Skincare</div>
+            <div class="hcard-tag">💆 Hair & Skincare · Andheri</div>
+            <div class="hcard-products">
+              <div class="hcard-prod"><div class="hcard-prod-name">Hair Growth Oil</div><div class="hcard-prod-price">₹299</div></div>
+              <div class="hcard-prod"><div class="hcard-prod-name">Neem Face Wash</div><div class="hcard-prod-price">₹149</div></div>
+              <div class="hcard-prod"><div class="hcard-prod-name">Ubtan Powder</div><div class="hcard-prod-price">₹199</div></div>
+              <div class="hcard-prod"><div class="hcard-prod-name">Kumkumadi Oil</div><div class="hcard-prod-price">₹349</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="hcard hcard-right">
+          <div class="hcard-cover" style="background:linear-gradient(135deg,#F4EDE8,#E8D4C0)">🍱</div>
+          <div class="hcard-body"><div class="hcard-name">Sunita Tiffin</div><div class="hcard-tag">🍱 Home Food · Borivali</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="how-section">
+    <div class="section-header">
+      <div class="section-label">How it works</div>
+      <h2 class="section-title serif">Online in <em>5 minutes</em>, really</h2>
+    </div>
+    <div class="how-grid">
+      <div class="how-card"><div class="how-num">1</div><div class="how-icon">📝</div><div class="how-title">Tell us about you</div><div class="how-desc">Your name, your area, your WhatsApp. That's it. No documents, no approvals.</div></div>
+      <div class="how-card"><div class="how-num">2</div><div class="how-icon">📷</div><div class="how-title">Add your products</div><div class="how-desc">Upload a photo, set a price, add a description. Your catalog looks professional instantly.</div></div>
+      <div class="how-card"><div class="how-num">3</div><div class="how-icon">🔗</div><div class="how-title">Get your store link</div><div class="how-desc">nukkad.in/yourname — share it on WhatsApp groups, Instagram bio, anywhere.</div></div>
+      <div class="how-card"><div class="how-num">4</div><div class="how-icon">💬</div><div class="how-title">Orders on WhatsApp</div><div class="how-desc">Customer taps "Order" — you get a WhatsApp message with everything you need. Close the sale.</div></div>
+    </div>
+  </div>
+
+  <div class="features-section">
+    <div class="section-header">
+      <div class="section-label">Why Nukkad</div>
+      <h2 class="section-title serif">Built for the way <em>India actually sells</em></h2>
+    </div>
+    <div class="features-grid">
+      <div class="feat-card"><div class="feat-icon" style="background:#E8F0F8">🏪</div><div class="feat-title">Your identity online</div><div class="feat-desc">A real store page that's yours — nukkad.in/yourname. Share it on your visiting card, packaging, WhatsApp status.</div></div>
+      <div class="feat-card"><div class="feat-icon" style="background:#FDF4E4">📷</div><div class="feat-title">Real product catalog</div><div class="feat-desc">Upload actual photos with prices. No more "DM for price." Customers see everything before they contact you.</div></div>
+      <div class="feat-card"><div class="feat-icon" style="background:#E8F4EA">💬</div><div class="feat-title">WhatsApp-native orders</div><div class="feat-desc">We don't fight WhatsApp — we plug into it. Every order lands in your inbox with product details, ready to confirm.</div></div>
+      <div class="feat-card"><div class="feat-icon" style="background:#F4E8E8">📲</div><div class="feat-title">QR code for everywhere</div><div class="feat-desc">Auto-generated QR for your store. Stick it on your packaging, share it in society groups — they scan and shop.</div></div>
+    </div>
+  </div>
+
+  <!-- ════ INSTAGRAM PAIN POINT SECTION ════ -->
+  <div style="background:var(--ink);padding:4rem clamp(1rem,5%,3rem);text-align:center;">
+    <div style="max-width:700px;margin:0 auto;">
+      <div style="font-size:0.7rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold-light);margin-bottom:1rem;">Sound familiar?</div>
+      <h2 style="font-family:'Cormorant Garamond',serif;font-size:clamp(1.6rem,3.5vw,2.5rem);color:white;line-height:1.2;margin-bottom:1.2rem;font-weight:700;">You have a profile on Instagram.<br>But they still <em style="color:var(--earth-light);font-style:italic;">can't see what you sell.</em></h2>
+      <p style="font-size:0.92rem;color:rgba(255,255,255,0.6);line-height:1.7;margin-bottom:2rem;">No product catalog. No prices. No order button. Just DMs that get lost. Nukkad gives your followers a real place to shop — in 5 minutes.</p>
+      <button class="btn-primary" onclick="startCreate()" style="background:var(--gold);color:var(--ink);margin:0 auto;display:inline-flex;">Create Your Store Free →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MARKETPLACE ════ -->
+<div class="pg" id="pg-market">
+  <div class="market-hero">
+    <div class="mh-pattern"></div>
+    <div class="mh-floaters">
+      <div class="mh-float-card"><span class="fc-emoji">🌿</span><div><div class="fc-text">Priya's Skincare</div><div class="fc-sub">Hair & Skincare · Andheri</div></div></div>
+      <div class="mh-float-card"><span class="fc-emoji">🧁</span><div><div class="fc-text">Meena's Bakery</div><div class="fc-sub">Cakes & Bakes · Bandra</div></div></div>
+      <div class="mh-float-card"><span class="fc-emoji">🍱</span><div><div class="fc-text">Sunita Tiffin</div><div class="fc-sub">Home Food · Borivali</div></div></div>
+      <div class="mh-float-card"><span class="fc-emoji">🕯️</span><div><div class="fc-text">Craft by Ritu</div><div class="fc-sub">Home Decor · Thane</div></div></div>
+      <div class="mh-float-card"><span class="fc-emoji">💍</span><div><div class="fc-text">Zara Jewels</div><div class="fc-sub">Handmade Jewellery · Dadar</div></div></div>
+      <div class="mh-float-card"><span class="fc-emoji">🥨</span><div><div class="fc-text">Asha's Farshan</div><div class="fc-sub">Snacks & Namkeen · Mulund</div></div></div>
+    </div>
+    <div class="mh-inner">
+      <h1 class="mh-title serif">Find sellers in your <em>neighbourhood</em></h1>
+      <p class="mh-sub">Home bakers, cooks, artisans — real sellers near you, on WhatsApp. 🌿</p>
+      <div class="search-wrap">
+        <input type="text" id="search-inp" placeholder='Try "farshan Mumbai" or "birthday cake Andheri"...' oninput="doSearch()">
+        <button class="search-btn" onclick="doSearch()">Search</button>
+      </div>
+    </div>
+  </div>
+  <div class="market-body">
+    <div class="filter-row">
+      <div class="fchip on" onclick="doFilter('all',this)">All</div>
+      <div class="fchip" onclick="doFilter('hair',this)">💆 Hair & Skin</div>
+      <div class="fchip" onclick="doFilter('food',this)">🍳 Food</div>
+      <div class="fchip" onclick="doFilter('baked',this)">🧁 Baked Goods</div>
+      <div class="fchip" onclick="doFilter('clothing',this)">👗 Clothing</div>
+      <div class="fchip" onclick="doFilter('decor',this)">🕯️ Decor</div>
+      <div class="fchip" onclick="doFilter('jewellery',this)">💍 Jewellery</div>
+      <div class="fchip" onclick="doFilter('herbal',this)">🌿 Herbal</div>
+    </div>
+    <div class="market-section-hdr">
+      <div class="msh-title serif">Stores near you</div>
+      <div class="msh-count" id="mkt-count"></div>
+    </div>
+    <div class="stores-grid" id="stores-grid">
+      <div class="loading-grid">
+        <div class="skeleton"><div class="sk-cover"></div><div class="sk-body"><div class="sk-line" style="height:14px;width:60%"></div><div class="sk-line" style="height:10px;width:80%"></div><div class="sk-line" style="height:10px;width:40%"></div></div></div>
+        <div class="skeleton"><div class="sk-cover"></div><div class="sk-body"><div class="sk-line" style="height:14px;width:60%"></div><div class="sk-line" style="height:10px;width:80%"></div><div class="sk-line" style="height:10px;width:40%"></div></div></div>
+        <div class="skeleton"><div class="sk-cover"></div><div class="sk-body"><div class="sk-line" style="height:14px;width:60%"></div><div class="sk-line" style="height:10px;width:80%"></div><div class="sk-line" style="height:10px;width:40%"></div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ STORE VIEW — REDESIGNED ════ -->
+<div class="pg" id="pg-store">
+  <!-- Cover: full-bleed, tall, immersive -->
+  <div class="sv-cover" id="sv-cover">
+    <div class="sv-cover-pattern" id="sv-cover-pattern"></div>
+    <!-- Cover wall layer — bubbles or photos -->
+    <div id="sv-cover-wall"
+         style="position:absolute;inset:0;
+                z-index:1;overflow:hidden;">
+    </div>
+    <div class="sv-cover-fade"
+         style="z-index:2;position:absolute;
+                bottom:0;left:0;right:0;
+                height:120px;
+                background:linear-gradient(
+                  to bottom,transparent,
+                  rgba(26,15,10,0.5));"></div>
+    <button class="sv-back-float"
+            style="z-index:10;"
+            onclick="goHome();window.scrollTo(0,0);">
+      ← Back
+    </button>
+    <!-- Owner: edit cover button -->
+    <button class="cover-edit-btn"
+            id="cover-edit-btn"
+            onclick="openCoverEditor()">
+      🖼 Edit cover
+    </button>
+    <div id="sv-order-status-wrap"
+         style="position:absolute;top:0.9rem;right:1rem;
+                z-index:11;display:flex;flex-direction:column;
+                align-items:flex-end;gap:0.4rem;">
+      <!-- Status badge — visible to all -->
+      <div id="sv-status-badge"
+           style="display:none;align-items:center;gap:0.35rem;
+                  backdrop-filter:blur(8px);border-radius:100px;
+                  padding:0.35rem 0.85rem;font-size:0.72rem;
+                  font-weight:700;font-family:'Plus Jakarta Sans',
+                  sans-serif;">
+        <div id="sv-status-dot"
+             style="width:7px;height:7px;border-radius:50%;"></div>
+        <span id="sv-status-text">Taking orders</span>
+      </div>
+      <!-- Toggle button — visible to owner only -->
+      <button id="sv-toggle-btn"
+              onclick="toggleOrderStatus()"
+              style="display:none;background:rgba(255,255,255,0.18);
+                     backdrop-filter:blur(8px);
+                     border:1px solid rgba(255,255,255,0.3);
+                     color:white;font-family:'Plus Jakarta Sans',
+                     sans-serif;font-size:0.72rem;font-weight:600;
+                     padding:0.32rem 0.8rem;border-radius:100px;
+                     cursor:pointer;">
+        ⏸ Pause orders
+      </button>
+    </div>
+  </div>
+
+  <!-- Avatar and action buttons row -->
+  <div class="sv-avatar-wrap">
+    <div style="display:flex;align-items:flex-end;gap:0.9rem;">
+      <div class="sv-avatar-wrap-inner">
+        <div class="sv-avatar" id="sv-av"></div>
+        <button class="sv-avatar-upload-btn"
+                id="sv-avatar-upload-btn"
+                style="display:none"
+                onclick="triggerAvatarUpload()"
+                title="Change logo">+</button>
+        <input type="file"
+               id="sv-avatar-file-input"
+               accept="image/*"
+               onchange="handleAvatarUpload(event)">
+      </div>
+      <div class="sv-avatar-name-block">
+        <div class="sv-name" id="sv-name"></div>
+        <div class="sv-location" id="sv-location"></div>
+      </div>
+    </div>
+    <div class="sv-action-row">
+      <button class="sv-btn sv-btn-outline" id="sv-dash-btn" style="display:none" onclick="openDashPanel()">📊 Dashboard</button>
+      <button class="sv-btn sv-btn-wa" onclick="whatsappStore()">💬 WhatsApp</button>
+      <button class="sv-btn sv-btn-share" onclick="shareStore()">🔗 Share link</button>
+      <button class="sv-btn sv-btn-insta" onclick="openShareCard()">📸 Story card</button>
+      <button class="sv-btn sv-btn-outline" onclick="showQR()">⬛ QR</button>
+    </div>
+  </div>
+
+  <div class="sv-body">
+    <div class="sv-meta">
+      <div class="sv-tagline" id="sv-tagline"></div>
+      <div class="sv-badges" id="sv-badges"></div>
+    </div>
+
+    <!-- Seller story -->
+    <div class="sv-story" id="sv-story" style="display:none">
+      <div class="sv-story-icon">🌿</div>
+      <div style="flex:1">
+        <div class="sv-story-title" style="display:flex;align-items:center;gap:0.5rem;">
+          Our story
+          <button id="sv-story-edit-btn"
+                  onclick="toggleStoryEdit()"
+                  style="display:none;background:none;border:1px solid var(--border);
+                         border-radius:100px;padding:0.15rem 0.55rem;
+                         font-size:0.7rem;font-weight:600;color:var(--ink);
+                         cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;">
+            ✏️ Edit
+          </button>
+        </div>
+        <div class="sv-story-text" id="sv-story-text"></div>
+        <textarea id="sv-story-input"
+                  rows="4"
+                  placeholder="Tell your story…"
+                  style="display:none;width:100%;margin-top:0.5rem;
+                         border:1px solid var(--border);border-radius:var(--radius);
+                         padding:0.6rem;font-family:'Plus Jakarta Sans',sans-serif;
+                         font-size:0.88rem;color:var(--ink);resize:vertical;
+                         box-sizing:border-box;"></textarea>
+        <div id="sv-story-actions" style="display:none;gap:0.5rem;margin-top:0.5rem;">
+          <button onclick="saveStory()"
+                  style="background:var(--ink);color:white;border:none;
+                         border-radius:100px;padding:0.35rem 0.9rem;
+                         font-size:0.78rem;font-weight:600;cursor:pointer;
+                         font-family:'Plus Jakarta Sans',sans-serif;">
+            Save
+          </button>
+          <button onclick="cancelStoryEdit()"
+                  style="background:none;border:1px solid var(--border);
+                         border-radius:100px;padding:0.35rem 0.9rem;
+                         font-size:0.78rem;font-weight:600;cursor:pointer;
+                         font-family:'Plus Jakarta Sans',sans-serif;color:var(--ink);">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Products -->
+    <div class="sv-section">
+      <div class="sv-section-hdr">
+        <div class="sv-section-title" id="sv-prod-title">Products</div>
+        <button id="sv-add-prod-btn" style="display:none;background:var(--ink);color:white;border:none;padding:0.4rem 0.9rem;border-radius:100px;font-size:0.76rem;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;" onclick="showAddProductModal()">＋ Add</button>
+      </div>
+      <div class="sv-products-grid" id="sv-prod-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ SHARE CARD MODAL ════ -->
+<div id="share-card-modal"
+     onclick="if(event.target===this)closeShareCard()"
+     style="display:none;position:fixed;inset:0;
+            z-index:800;
+            background:rgba(26,15,10,0.8);
+            backdrop-filter:blur(8px);
+            align-items:center;justify-content:center;
+            padding:1rem;">
+
+  <div style="background:var(--paper-warm);
+              border-radius:var(--radius-lg);
+              padding:1.4rem;
+              max-width:380px;width:100%;
+              max-height:92vh;overflow-y:auto;
+              box-shadow:0 32px 80px rgba(0,0,0,0.4);">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;
+                justify-content:space-between;
+                margin-bottom:1rem;">
+      <div>
+        <div style="font-family:'Cormorant Garamond',
+                    serif;font-size:1.2rem;
+                    font-weight:700;color:var(--ink);">
+          Story Card
+        </div>
+        <div style="font-size:0.74rem;
+                    color:var(--ink-light);
+                    margin-top:0.1rem;">
+          Download and share on Instagram or WhatsApp
+        </div>
+      </div>
+      <button onclick="closeShareCard()"
+              style="background:none;border:none;
+                     font-size:1.2rem;cursor:pointer;
+                     color:var(--ink-light);">✕</button>
+    </div>
+
+    <!-- Card type tabs -->
+    <div style="display:flex;gap:0.4rem;
+                margin-bottom:1.2rem;">
+      <button id="sct-store-btn"
+              onclick="switchStoryCardType('store')"
+              style="flex:1;padding:0.5rem;
+                     border-radius:8px;
+                     font-family:'Plus Jakarta Sans',
+                     sans-serif;font-size:0.78rem;
+                     font-weight:600;cursor:pointer;
+                     border:1.5px solid var(--ink);
+                     background:var(--ink);color:white;
+                     transition:all 0.2s;">
+        🏪 Store Card
+      </button>
+      <button id="sct-product-btn"
+              onclick="switchStoryCardType('product')"
+              style="flex:1;padding:0.5rem;
+                     border-radius:8px;
+                     font-family:'Plus Jakarta Sans',
+                     sans-serif;font-size:0.78rem;
+                     font-weight:600;cursor:pointer;
+                     border:1.5px solid var(--border);
+                     background:white;
+                     color:var(--ink-mid);
+                     transition:all 0.2s;">
+        🛍️ Product Card
+      </button>
+    </div>
+
+    <!-- Product selector (shown for product card) -->
+    <div id="sct-product-selector"
+         style="display:none;margin-bottom:1rem;">
+      <label style="font-size:0.74rem;font-weight:600;
+                    color:var(--ink-mid);display:block;
+                    margin-bottom:0.4rem;">
+        Select product
+      </label>
+      <select id="sct-product-select"
+              onchange="updateProductStoryCard()"
+              style="width:100%;padding:0.6rem 0.8rem;
+                     border:1.5px solid var(--border);
+                     border-radius:8px;
+                     font-family:'Plus Jakarta Sans',
+                     sans-serif;font-size:0.84rem;
+                     color:var(--ink);background:white;
+                     outline:none;">
+      </select>
+    </div>
+
+    <!-- Card preview canvas area -->
+    <div style="border-radius:12px;overflow:hidden;
+                margin-bottom:1rem;
+                box-shadow:0 8px 24px rgba(0,0,0,0.15);
+                background:#111;
+                aspect-ratio:9/16;
+                position:relative;">
+      <canvas id="story-card-canvas"
+              style="width:100%;height:100%;
+                     display:block;"></canvas>
+      <div id="story-card-loading"
+           style="position:absolute;inset:0;
+                  display:flex;align-items:center;
+                  justify-content:center;
+                  background:rgba(0,0,0,0.4);
+                  color:white;font-size:0.84rem;
+                  font-family:'Plus Jakarta Sans',
+                  sans-serif;">
+        Generating...
+      </div>
+    </div>
+
+    <!-- Hidden QR div for generation -->
+    <div id="qr-gen-div"
+         style="display:none;position:absolute;
+                left:-9999px;top:-9999px;">
+    </div>
+
+    <!-- Action buttons -->
+    <div style="display:flex;gap:0.6rem;">
+      <button onclick="downloadStoryCard()"
+              style="flex:1;background:var(--ink);
+                     color:white;border:none;
+                     padding:0.85rem;
+                     border-radius:var(--radius-sm);
+                     font-family:'Plus Jakarta Sans',
+                     sans-serif;font-size:0.86rem;
+                     font-weight:700;cursor:pointer;
+                     transition:all 0.2s;
+                     display:flex;align-items:center;
+                     justify-content:center;gap:0.4rem;">
+        ⬇️ Download
+      </button>
+      <button onclick="copyStoreLink()"
+              style="background:white;
+                     color:var(--ink-mid);
+                     border:1.5px solid var(--border);
+                     padding:0.85rem 1rem;
+                     border-radius:var(--radius-sm);
+                     font-family:'Plus Jakarta Sans',
+                     sans-serif;font-size:0.86rem;
+                     font-weight:600;cursor:pointer;
+                     transition:all 0.2s;
+                     white-space:nowrap;">
+        🔗 Copy link
+      </button>
+    </div>
+
+    <div style="text-align:center;margin-top:0.8rem;
+                font-size:0.72rem;color:var(--ink-faint);
+                line-height:1.5;">
+      QR code links directly to your store.<br>
+      Viewers scan it to visit instantly.
+    </div>
+
+  </div>
+</div>
+
+<!-- ════ PRODUCT DETAIL OVERLAY ════ -->
+<div id="product-detail">
+  <div class="pd-wrap">
+
+    <!-- Top bar -->
+    <div class="pd-topbar">
+      <button class="pd-back"
+              onclick="closeProductDetail()">
+        ← Back to Store
+      </button>
+      <div class="pd-store-pill"
+           id="pd-store-pill"
+           onclick="closeProductDetail()">
+        <div class="pd-store-pill-av"
+             id="pd-store-pill-av">🌿</div>
+        <span id="pd-store-pill-name">Store</span>
+        <span style="color:var(--ink-light);">›</span>
+      </div>
+    </div>
+
+    <!-- Hero image -->
+    <div class="pd-hero" id="pd-hero">
+      <img class="pd-hero-img"
+           id="pd-hero-img" src="" alt="">
+      <div class="pd-img-counter"
+           id="pd-img-counter"
+           style="display:none">1 / 1</div>
+    </div>
+
+    <!-- Thumbnail strip -->
+    <div class="pd-thumbs"
+         id="pd-thumbs"
+         style="display:none"></div>
+
+    <!-- Info -->
+    <div class="pd-info">
+      <div class="pd-category-tag"
+           id="pd-category-tag">⭐ Other</div>
+      <div class="pd-name-price-row">
+        <div class="pd-name serif"
+             id="pd-name"></div>
+        <div class="pd-price" id="pd-price"></div>
+      </div>
+      <div style="font-size:0.84rem;
+                  color:var(--ink-light);
+                  font-family:'Plus Jakarta Sans',
+                  sans-serif;margin-bottom:0.5rem;"
+           id="pd-sub-desc"></div>
+    </div>
+
+    <!-- Seller card -->
+    <div class="pd-seller-card">
+      <div class="pd-seller-av"
+           id="pd-seller-av">🌿</div>
+      <div class="pd-seller-info">
+        <div class="pd-seller-name">
+          <span id="pd-seller-name"></span>
+          <span class="pd-verified-tick">✔</span>
+        </div>
+        <div class="pd-seller-loc"
+             id="pd-seller-loc"></div>
+      </div>
+      <div class="pd-verified">
+        ✓ Verified Seller
+      </div>
+    </div>
+
+    <!-- Feature icons -->
+    <div class="pd-features" id="pd-features"></div>
+
+    <!-- Description + specs -->
+    <div class="pd-desc-section"
+         id="pd-desc-section">
+      <div class="pd-section-title">
+        About this product
+      </div>
+      <div class="pd-desc-specs-row">
+        <div class="pd-desc" id="pd-desc"></div>
+        <div class="pd-specs" id="pd-specs"></div>
+      </div>
+    </div>
+
+    <!-- Spacer for fixed CTAs -->
+    <div style="height:20px;"></div>
+
+    <!-- Trust strip -->
+    <div class="pd-trust-strip"
+         id="pd-trust-strip"></div>
+
+    <!-- Spacer -->
+    <div style="height:40px;"></div>
+
+  </div>
+
+  <!-- Fixed bottom CTAs -->
+  <div class="pd-order-section">
+    <button class="pd-enquire-btn"
+            id="pd-enquire-btn">
+      💬 Ask a Question
+    </button>
+    <button class="pd-wa-btn" id="pd-wa-btn">
+      <svg width="18" height="18"
+           viewBox="0 0 24 24"
+           fill="currentColor">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+      </svg>
+      Order on WhatsApp
+    </button>
+  </div>
+</div>
+
+
+<!-- ════ PROFILE PAGE ════ -->
+<div class="pg" id="pg-profile">
+  <div class="profile-wrap">
+    <div class="profile-header">
+      <div class="profile-avatar" id="profile-avatar">👤</div>
+      <div class="profile-name serif" id="profile-name">Your Profile</div>
+      <div class="profile-email" id="profile-email"></div>
+    </div>
+
+    <div class="profile-card" id="profile-details-card">
+      <div class="profile-card-title">Personal Details</div>
+      <div class="profile-field"><span class="profile-field-label">Name</span><span class="profile-field-val" id="pf-name">—</span></div>
+      <div class="profile-field"><span class="profile-field-label">Email</span><span class="profile-field-val" id="pf-email">—</span></div>
+      <div class="profile-field"><span class="profile-field-label">WhatsApp</span><span class="profile-field-val" id="pf-phone">—</span></div>
+      <div class="profile-field"><span class="profile-field-label">Location</span><span class="profile-field-val" id="pf-address">—</span></div>
+    </div>
+
+    <div id="profile-store-section">
+      <div class="profile-card-title" style="margin-bottom:0.8rem">My Store</div>
+      <div id="profile-store-wrap"></div>
+    </div>
+    <div id="my-orders-section" style="margin-top:1.5rem">
+      <div class="profile-card-title" style="margin-bottom:0.8rem">My Orders</div>
+      <div id="my-orders-list"></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════ CUSTOMER PROFILE PAGE ════ -->
+<div class="pg" id="pg-customer">
+  <div class="customer-wrap">
+    <div class="customer-avatar" id="cp-avatar">👤</div>
+    <div class="customer-name serif" id="cp-name">Customer</div>
+    <div class="customer-badge">✓ Verified Customer</div>
+    <div class="customer-card">
+      <div class="customer-card-title">Contact Details</div>
+      <div class="customer-row"><span class="customer-row-label">📞 WhatsApp</span><span class="customer-row-val" id="cp-phone">—</span></div>
+      <div class="customer-row"><span class="customer-row-label">📍 Location</span><span class="customer-row-val" id="cp-location">—</span></div>
+    </div>
+    <div class="customer-card" id="cp-orders-section" style="margin-top:1rem;display:none">
+      <div class="customer-card-title">Order History</div>
+      <div id="cp-orders-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ CREATE STORE ════ -->
+<div class="pg" id="pg-create">
+  <!-- STEP 0: Personal Details -->
+  <div id="s0" style="display:none">
+    <div class="progress-bar"><div class="pb-inner">
+      <div class="pb-step cur"><div class="pb-circle">1</div><div class="pb-label">You</div></div>
+      <div class="pb-step"><div class="pb-circle">2</div><div class="pb-label">Brand</div></div>
+      <div class="pb-step"><div class="pb-circle">3</div><div class="pb-label">Products</div></div>
+      <div class="pb-step"><div class="pb-circle">4</div><div class="pb-label">Preview</div></div>
+    </div></div>
+    <div class="create-body">
+      <h1 class="create-h serif">First, tell us about you 👋</h1>
+      <p class="create-sub">We need a few details to set up your seller account.</p>
+      <div class="cf"><label class="cl">Your Full Name <span>*</span></label><input type="text" class="ci" id="u-name" placeholder="e.g. Priya Sharma"><div class="cerr" id="cerr-uname">Please enter your name</div></div>
+      <div class="cf"><label class="cl">Email Address <span>*</span></label><input type="email" class="ci" id="u-email" placeholder="e.g. priya@gmail.com"><div class="cerr" id="cerr-uemail">Please enter your email</div></div>
+      <div class="cf"><label class="cl">WhatsApp Number <span>*</span></label><input type="tel" class="ci" id="u-phone" placeholder="e.g. 98765 43210"><div class="chint">Customers will send orders to this number</div><div class="cerr" id="cerr-uphone">Please enter your WhatsApp number</div></div>
+      <div class="cf"><label class="cl">Area <span>*</span></label><input type="text" class="ci" id="u-area" placeholder="e.g. Andheri East"><div class="cerr" id="cerr-uarea">Please enter your area</div></div>
+      <div class="cf"><label class="cl">City <span>*</span></label><input type="text" class="ci" id="u-city" placeholder="e.g. Mumbai"><div class="cerr" id="cerr-ucity">Please enter your city</div></div>
+    </div>
+    <div class="form-foot"><button class="foot-next" onclick="s0to1()">Continue — Create Your Store →</button></div>
+  </div>
+
+  <div id="s1">
+    <div class="progress-bar"><div class="pb-inner">
+      <div class="pb-step done"><div class="pb-circle">✓</div><div class="pb-label">You</div></div>
+      <div class="pb-step cur"><div class="pb-circle">2</div><div class="pb-label">Brand</div></div>
+      <div class="pb-step"><div class="pb-circle">3</div><div class="pb-label">Products</div></div>
+      <div class="pb-step"><div class="pb-circle">4</div><div class="pb-label">Preview</div></div>
+    </div></div>
+    <div class="create-body">
+      <h1 class="create-h serif">Tell us about your brand 🌿</h1>
+      <p class="create-sub">Your storefront — make it feel like you.</p>
+      <div class="cf"><label class="cl">Brand Name <span>*</span></label><input type="text" class="ci" id="c-bname" placeholder="e.g. Nature's Glow" maxlength="40"><div class="cerr" id="cerr-name">Please enter your brand name</div></div>
+      <div class="cf"><label class="cl">Pick an Emoji <span>*</span></label><div class="emoji-picker" id="ep"></div></div>
+      <div class="cf"><label class="cl">Category <span>*</span></label><div class="chips" id="c-cats">
+        <div class="chip" onclick="pickCat(this)">💆 Hair & Skincare</div>
+        <div class="chip" onclick="pickCat(this)">🍳 Home-cooked Food</div>
+        <div class="chip" onclick="pickCat(this)">🧁 Baked Goods</div>
+        <div class="chip" onclick="pickCat(this)">👗 Handmade Clothing</div>
+        <div class="chip" onclick="pickCat(this)">🕯️ Home Decor</div>
+        <div class="chip" onclick="pickCat(this)">💍 Jewellery</div>
+        <div class="chip" onclick="pickCat(this)">🌿 Herbal Products</div>
+        <div class="chip" onclick="pickCat(this)">📦 Other</div>
+      </div><div class="cerr" id="cerr-cat">Please select a category</div></div>
+      <div class="cf"><label class="cl">Tagline <span>*</span></label><input type="text" class="ci" id="c-tag" placeholder="e.g. Natural hair care — safe, herbal, effective" maxlength="80"><div class="cerr" id="cerr-tag">Please add a tagline</div></div>
+      <div class="cf"><label class="cl">City</label><input type="text" class="ci" id="c-city" placeholder="e.g. Mumbai"></div>
+
+    </div>
+    <div class="form-foot">
+      <button class="foot-back" onclick="csShow(0)">← Back</button>
+      <button class="foot-next" onclick="s1to2()">Continue — Add Products →</button>
+    </div>
+  </div>
+
+  <div id="s2" style="display:none">
+    <div class="progress-bar"><div class="pb-inner">
+      <div class="pb-step done"><div class="pb-circle">✓</div><div class="pb-label">You</div></div>
+      <div class="pb-step done"><div class="pb-circle">✓</div><div class="pb-label">Brand</div></div>
+      <div class="pb-step cur"><div class="pb-circle">3</div><div class="pb-label">Products</div></div>
+      <div class="pb-step"><div class="pb-circle">4</div><div class="pb-label">Preview</div></div>
+    </div></div>
+    <div class="create-body">
+      <h1 class="create-h serif">List your products 📷</h1>
+      <p class="create-sub">Add at least 1 product. Upload a photo to make it look great!</p>
+      <div class="prod-list" id="prod-list"></div>
+      <button class="add-prod-btn" onclick="addProd()">＋ Add a Product</button>
+    </div>
+    <div class="form-foot">
+      <button class="foot-back" onclick="csShow(1)">← Back</button>
+      <button class="foot-next" onclick="s2to3()">Preview My Store →</button>
+    </div>
+  </div>
+
+  <div id="s3" style="display:none">
+    <div class="progress-bar"><div class="pb-inner">
+      <div class="pb-step done"><div class="pb-circle">✓</div><div class="pb-label">You</div></div>
+      <div class="pb-step done"><div class="pb-circle">✓</div><div class="pb-label">Brand</div></div>
+      <div class="pb-step done"><div class="pb-circle">✓</div><div class="pb-label">Products</div></div>
+      <div class="pb-step cur"><div class="pb-circle">4</div><div class="pb-label">Preview</div></div>
+    </div></div>
+    <div id="pv-content"></div>
+    <div class="form-foot">
+      <button class="foot-back" onclick="csShow(2); const pb=document.getElementById('publish-btn'); if(pb){pb.disabled=false;pb.innerHTML='🚀 Publish My Store';}">← Edit</button>
+      <button class="foot-next" id="publish-btn" onclick="publish()">🚀 Publish My Store</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════ AUTH MODAL ════ -->
+<div id="auth-modal">
+  <div class="auth-box" style="position:relative;">
+    <button class="auth-close" onclick="closeAuthModal()">✕</button>
+    <div class="auth-tabs">
+      <button class="auth-tab on" id="auth-tab-login" onclick="switchAuthTab('login')">Log In</button>
+      <button class="auth-tab" id="auth-tab-signup" onclick="switchAuthTab('signup')">Sign Up</button>
+    </div>
+    <div class="auth-body">
+
+      <!-- LOGIN FORM -->
+      <div id="auth-login-form">
+        <div class="auth-title serif">Welcome back 👋</div>
+        <div class="auth-sub">Log in to manage your store</div>
+        <div class="auth-field">
+          <label class="auth-label">Email Address</label>
+          <input type="email" class="auth-input" id="login-email" placeholder="you@email.com">
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Password</label>
+<div style="position:relative;">
+  <input type="password" class="auth-input" id="login-pass" placeholder="Your password" onkeydown="if(event.key==='Enter')doLogin()" style="padding-right:2.8rem;">
+  <button type="button" onclick="togglePass('login-pass',this)" style="position:absolute;right:0.8rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--ink-light);">👁️</button>
+</div>
+        </div>
+        <div class="auth-err" id="login-err"></div>
+        <button class="auth-btn" id="login-btn" onclick="doLogin()">Log In</button>
+        <div class="auth-switch">Don't have an account? <span onclick="switchAuthTab('signup')">Sign up free</span></div>
+      </div>
+
+      <!-- SIGNUP FORM -->
+      <div id="auth-signup-form" style="display:none;">
+        <div class="auth-title serif">Create your account 🌿</div>
+        <div class="auth-sub">Join Nukkad and start selling</div>
+        <div class="auth-field">
+          <label class="auth-label">Full Name</label>
+          <input type="text" class="auth-input" id="signup-name" placeholder="e.g. Priya Sharma">
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Email Address</label>
+          <input type="email" class="auth-input" id="signup-email" placeholder="you@email.com">
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">WhatsApp Number</label>
+          <input type="tel" class="auth-input" id="signup-phone" placeholder="e.g. 98765 43210">
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Area</label>
+          <input type="text" class="auth-input" id="signup-area" placeholder="e.g. Andheri East">
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">City</label>
+          <input type="text" class="auth-input" id="signup-city" placeholder="e.g. Mumbai">
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Password</label>
+<div style="position:relative;">
+  <input type="password" class="auth-input" id="signup-pass" placeholder="Min 6 characters" onkeydown="if(event.key==='Enter')doSignup()" style="padding-right:2.8rem;">
+  <button type="button" onclick="togglePass('signup-pass',this)" style="position:absolute;right:0.8rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--ink-light);">👁️</button>
+</div>
+        </div>
+        <div class="auth-err" id="signup-err"></div>
+        <button class="auth-btn" id="signup-btn" onclick="doSignup()">Create Account</button>
+        <div class="auth-switch">Already have an account? <span onclick="switchAuthTab('login')">Log in</span></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ════ SUCCESS ════ -->
+<div id="success-ov">
+  <div class="so-confetti">🎉</div>
+  <h1 class="so-title serif">Your store is live!</h1>
+  <p class="so-sub">Share this link anywhere — WhatsApp, Instagram, or in your bio. Anyone who taps it sees your full store.</p>
+  <div class="so-link-box" onclick="copySuccessLink()">
+    <div class="so-link-text">🔗 nukkad.in/<span id="so-hdl"></span></div>
+    <div class="so-copy-lbl">Tap to copy</div>
+  </div>
+  <div class="so-btns">
+    <button class="so-wa-btn" onclick="successWA()">💬 Share on WhatsApp</button>
+    <button class="so-view-btn" onclick="viewNewStore()">View My Store →</button>
+    <button class="so-qr-btn" onclick="showQR()">⬛ Get QR Code</button>
+  </div>
+</div>
+
+
+<!-- ════ ADD PRODUCT MODAL ════ -->
+<div id="add-prod-modal">
+  <div class="apm-box">
+    <div class="apm-title serif">
+      Add Product
+      <button class="apm-close" onclick="closeAddProductModal()">✕</button>
+    </div>
+
+    <!-- Photo upload -->
+    <div class="cf">
+      <div class="img-upload-area" id="apm-iua">
+        <div id="apm-ipl">
+          <div style="font-size:1.5rem;margin-bottom:0.3rem">📷</div>
+          <div class="img-upload-label">Click to take or upload product photo</div>
+          <button type="button" class="img-upload-btn" onclick="document.getElementById('apm-img').click()">📷 Choose Photo</button>
+        </div>
+        <div id="apm-ipw" style="display:none">
+          <img id="apm-ipv" class="img-upload-preview" alt="preview">
+          <button type="button" class="img-change-btn" onclick="document.getElementById('apm-img').click()">Change Photo</button>
+        </div>
+        <input type="file" class="img-upload-input" id="apm-img" accept="image/*" onchange="handleApmImg(event)">
+      </div>
+    </div>
+
+    <!-- Manual fields -->
+    <div class="cf">
+      <label class="cl">Product Name <span>*</span></label>
+      <input type="text" class="ci" id="apm-name" placeholder="e.g. Chocochip Cookie">
+    </div>
+    <div class="cf">
+      <label class="cl">Price ₹ <span>*</span></label>
+      <input type="number" class="ci" id="apm-price" placeholder="e.g. 259">
+    </div>
+    <div class="cf">
+      <label class="cl">Description</label>
+      <textarea class="ct" id="apm-desc" placeholder="Describe your product..." rows="3"></textarea>
+    </div>
+    <button class="apm-save" id="apm-save-btn" onclick="saveNewProduct()">Save Product</button>
+  </div>
+</div>
+
+<!-- ════ QR MODAL ════ -->
+<div id="qr-modal">
+  <div class="qr-box">
+    <div class="qr-title serif">Your Store QR Code</div>
+    <div class="qr-sub" id="qr-url-label"></div>
+    <div id="qr-canvas"></div>
+    <div class="qr-btns">
+      <button class="qr-dl" onclick="downloadQR()">⬇ Download</button>
+      <button class="qr-close" onclick="closeQR()">Close</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════ PROFILE PANEL (slides from right) ════ -->
+<div id="panel-overlay" onclick="closePanel()"></div>
+<div id="profile-panel">
+  <div class="pp-header">
+    <span class="pp-header-title serif">My Account</span>
+    <button class="pp-close" onclick="closePanel()">✕</button>
+  </div>
+  <div class="pp-avatar-row">
+    <div style="position:relative;display:inline-block;margin-bottom:0.5rem;">
+      <div class="pp-avatar" id="pp-av">?</div>
+      <button id="pp-avatar-upload-btn"
+              onclick="triggerProfilePhotoUpload()"
+              style="position:absolute;bottom:0;right:0;
+                     width:22px;height:22px;border-radius:50%;
+                     background:var(--ink);color:white;
+                     border:2px solid white;font-size:0.7rem;
+                     display:none;align-items:center;
+                     justify-content:center;cursor:pointer;
+                     line-height:1;">+</button>
+      <input type="file" id="pp-avatar-file-input"
+             accept="image/*" style="display:none"
+             onchange="handleProfilePhotoUpload(event)">
+    </div>
+    <div class="pp-user-name" id="pp-name">—</div>
+    <div class="pp-user-email" id="pp-email">—</div>
+  </div>
+  <div class="pp-section">
+    <div class="pp-section-title">Personal details</div>
+    <div class="pp-row"><span class="pp-row-label">WhatsApp</span><span class="pp-row-val" id="pp-phone">—</span></div>
+    <div class="pp-row"><span class="pp-row-label">Area</span><span class="pp-row-val" id="pp-area">—</span></div>
+    <div class="pp-row"><span class="pp-row-label">City</span><span class="pp-row-val" id="pp-city">—</span></div>
+  </div>
+  <div class="pp-section" style="border-top:1px solid var(--border-light)">
+    <div class="pp-section-title">My store</div>
+    <div id="pp-store-wrap"></div>
+  </div>
+</div>
+
+<div id="bottom-nav">
+  <button class="bn on" id="bn-home" onclick="goHome()"><span class="bn-icon">🏠</span><span class="bn-label">Home</span></button>
+  <button class="bn" id="bn-market" onclick="showPg('market')" style="display:none"><span class="bn-icon">🔍</span><span class="bn-label">Explore</span></button>
+  <button class="bn" id="bn-create" onclick="handleCreateClick()"><span class="bn-icon">＋</span><span class="bn-label">Create</span></button>
+  <button class="bn" id="bn-mystore" onclick="goMyStore()"><span class="bn-icon" id="bn-store-icon">🏪</span><span class="bn-label" id="bn-store-label">My Store</span></button>
+</div>
+
+<div id="toast"></div>
+
+<script src="js/app.js"></script>
+<!-- ════ FOOTER ════ -->
+<footer id="site-footer" style="background:var(--ink);color:var(--paper);padding:3rem clamp(1rem,5%,3rem) 2rem;margin-top:0;">
+  <div style="max-width:1100px;margin:0 auto;">
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:3rem;margin-bottom:2.5rem;">
+      <div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:700;margin-bottom:0.5rem;">Nukkad<span style="color:var(--gold);">·</span></div>
+        <p style="font-size:0.85rem;color:rgba(255,255,255,0.55);line-height:1.7;max-width:280px;">India ka apna neighbourhood marketplace. For home bakers, cooks, artisans, and every seller who deserves to be found.</p>
+      </div>
+      <div>
+        <div style="font-size:0.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:1rem;">Sellers</div>
+        <div style="display:flex;flex-direction:column;gap:0.6rem;">
+          <a href="#" onclick="startCreate();return false;" style="font-size:0.85rem;color:rgba(255,255,255,0.7);text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,0.7)'">Create your store</a>
+          <a href="#" onclick="return false;" style="display:none">Browse marketplace</a>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:0.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:1rem;">Connect</div>
+        <div style="display:flex;flex-direction:column;gap:0.6rem;">
+          <span style="font-size:0.85rem;color:rgba(255,255,255,0.7);">📍 Mumbai, India</span>
+          <span style="font-size:0.85rem;color:rgba(255,255,255,0.7);">Made with ❤️ for every sellers</span>
+        </div>
+      </div>
+    </div>
+    <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+      <span style="font-size:0.78rem;color:rgba(255,255,255,0.35);">© 2025 Nukkad. All rights reserved.</span>
+      <span style="font-size:0.78rem;color:rgba(255,255,255,0.35);">Apni dukaan. Apna nukkad.</span>
+    </div>
+  </div>
+</footer>
+
+<!-- EDIT PRODUCT MODAL -->
+<div id="edit-prod-modal" onclick="if(event.target===this)closeEditProduct()">
+  <div class="epm-box">
+    <div class="epm-title">Edit product</div>
+    <input type="hidden" id="epm-prod-id">
+    <input type="hidden" id="epm-handle">
+    <input class="ct" id="epm-name" placeholder="Product name" type="text">
+    <input class="ct" id="epm-price" placeholder="Price (₹)" type="number" min="0">
+    <textarea class="ct" id="epm-desc" placeholder="Description" rows="3"></textarea>
+    <div style="margin-bottom:1rem;">
+      <label style="font-size:0.78rem;font-weight:600;
+                    color:var(--ink-mid);display:block;
+                    margin-bottom:0.5rem;">
+        Product Photos (up to 6)
+      </label>
+      <!-- Main photo -->
+      <div id="ep-current-img"
+           style="margin-bottom:0.6rem;border-radius:10px;
+                  overflow:hidden;max-height:140px;
+                  background:var(--paper-deep);
+                  display:flex;align-items:center;
+                  justify-content:center;
+                  min-height:60px;"></div>
+      <label for="ep-image-file"
+             style="display:inline-flex;
+                    align-items:center;gap:0.4rem;
+                    background:var(--paper-deep);
+                    border:1.5px dashed var(--border);
+                    color:var(--ink-mid);font-size:0.78rem;
+                    font-weight:600;padding:0.55rem 1rem;
+                    border-radius:100px;cursor:pointer;
+                    font-family:'Plus Jakarta Sans',
+                    sans-serif;transition:all 0.2s;
+                    margin-bottom:0.8rem;">
+        📷 Change main photo
+      </label>
+      <input type="file" id="ep-image-file"
+             accept="image/*" style="display:none"
+             onchange="previewEditImage(event)">
+      <!-- Extra photos grid -->
+      <label style="font-size:0.74rem;font-weight:600;
+                    color:var(--ink-mid);display:block;
+                    margin-bottom:0.4rem;">
+        Extra photos
+        <span style="font-weight:400;
+                     color:var(--ink-faint);">
+          (optional — different angles)
+        </span>
+      </label>
+      <div id="ep-extra-photos"
+           style="display:grid;
+                  grid-template-columns:repeat(4,1fr);
+                  gap:0.4rem;margin-bottom:0.5rem;">
+      </div>
+      <input type="file" id="ep-extra-file"
+             accept="image/*" style="display:none"
+             onchange="handleExtraPhotoUpload(event)">
+    </div>
+    <div class="epm-row">
+      <button class="epm-save" id="epm-save-btn" onclick="saveEditProduct()">Save</button>
+      <button class="epm-cancel" onclick="closeEditProduct()">Cancel</button>
+    </div>
+    <div style="display:flex;gap:0.5rem;
+                margin-top:0.5rem;">
+      <button id="epm-hide-btn"
+              onclick="toggleHideProduct()"
+              style="flex:1;background:none;
+                     border:1px solid var(--border);
+                     border-radius:100px;
+                     padding:0.55rem;
+                     font-size:0.82rem;
+                     font-weight:600;
+                     cursor:pointer;
+                     font-family:'Plus Jakarta Sans',
+                     sans-serif;
+                     color:var(--ink-mid);
+                     transition:all 0.2s;">
+        👁 Hide product
+      </button>
+      <button onclick="deleteProduct()"
+              style="flex:1;background:none;
+                     border:1px solid #ffaaaa;
+                     border-radius:100px;
+                     padding:0.55rem;
+                     font-size:0.82rem;
+                     font-weight:600;
+                     cursor:pointer;
+                     font-family:'Plus Jakarta Sans',
+                     sans-serif;
+                     color:#cc3333;
+                     transition:all 0.2s;">
+        🗑 Delete
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- CHAT WIDGET -->
+<button id="chat-fab" onclick="openEnqSheet()">✉️ Ask seller</button>
+
+<div id="chat-panel">
+  <div class="chat-hdr">
+    <div class="chat-hdr-left">
+      <div class="chat-hdr-av" id="chat-hdr-av">🌿</div>
+      <div>
+        <div class="chat-hdr-name" id="chat-hdr-name">Store Assistant</div>
+        <div class="chat-hdr-sub">Ask me anything about our products</div>
+      </div>
+    </div>
+    <button class="chat-close-btn" onclick="closeChatWidget()">✕</button>
+  </div>
+  <div class="chat-msgs" id="chat-msgs"></div>
+  <div class="chat-input-row">
+    <input type="text" id="chat-input" placeholder="Describe your need or concern..."
+      onkeydown="if(event.key==='Enter'){event.preventDefault();sendChatMsg();}">
+    <button id="chat-send-btn" onclick="sendChatMsg()">→</button>
+  </div>
+  <div class="chat-powered">Powered by AI · Nukkad</div>
+</div>
+
+<div id="nukkad-story-overlay"
+     onclick="closeNukkadStory()"
+     style="display:none;position:fixed;inset:0;
+            z-index:9999;
+            background:#0d0905;
+            flex-direction:column;
+            align-items:center;justify-content:center;
+            padding:2rem;cursor:pointer;
+            opacity:0;transition:opacity 0.6s ease;">
+
+  <!-- Skip hint -->
+  <div style="position:absolute;top:1.5rem;right:1.5rem;
+              font-size:0.72rem;font-weight:600;
+              letter-spacing:1.5px;text-transform:uppercase;
+              color:rgba(255,255,255,0.25);
+              font-family:'Plus Jakarta Sans',sans-serif;">
+    Tap anywhere to skip
+  </div>
+
+  <!-- Story container -->
+  <div id="ns-content"
+       style="max-width:560px;width:100%;
+              text-align:center;">
+
+    <!-- Logo mark -->
+    <div id="ns-logo"
+         style="font-family:'Cormorant Garamond',serif;
+                font-size:1rem;font-weight:700;
+                letter-spacing:3px;text-transform:uppercase;
+                color:rgba(255,255,255,0.35);
+                margin-bottom:3rem;
+                opacity:0;transition:opacity 0.8s ease;">
+      NUKKAD ·
+    </div>
+
+    <!-- Lines container -->
+    <div id="ns-lines" style="display:flex;
+                               flex-direction:column;
+                               gap:0.1rem;"></div>
+
+    <!-- End card — hidden until the end -->
+    <div id="ns-end-card"
+         style="opacity:0;transition:opacity 1s ease;
+                margin-top:2.5rem;">
+      <div style="font-family:'Cormorant Garamond',serif;
+                  font-size:clamp(2rem,5vw,3rem);
+                  font-weight:700;color:white;
+                  margin-bottom:0.5rem;line-height:1.1;">
+        Nukkad.
+      </div>
+      <div style="font-size:clamp(0.9rem,2.5vw,1.1rem);
+                  color:rgba(255,255,255,0.6);
+                  font-family:'Plus Jakarta Sans',sans-serif;
+                  font-weight:400;line-height:1.7;
+                  margin-bottom:2rem;">
+        Your store. Your neighbourhood. Your customers.<br>
+        <em style="color:rgba(255,255,255,0.4);
+                   font-style:italic;">
+          — Online, in 5 minutes.
+        </em>
+      </div>
+      <button onclick="closeNukkadStory();startCreate();
+                       event.stopPropagation();"
+              style="background:var(--gold,#c8902a);
+                     color:#0d0905;border:none;
+                     font-family:'Plus Jakarta Sans',sans-serif;
+                     font-size:0.9rem;font-weight:700;
+                     padding:0.85rem 2rem;
+                     border-radius:100px;cursor:pointer;
+                     transition:all 0.2s;
+                     letter-spacing:0.3px;">
+        Start your store free →
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════ BUYER ORDER FLOW ════ -->
+<div id="buyer-overlay"
+     onclick="if(event.target===this)closeBuyerFlow()"
+     style="display:none;position:fixed;inset:0;
+            z-index:600;
+            background:rgba(26,15,10,0.55);
+            backdrop-filter:blur(4px);
+            align-items:flex-end;
+            justify-content:center;">
+
+  <!-- SHEET 1: Name + Phone (first time only) -->
+  <div id="buyer-sheet-1"
+       style="display:none;background:var(--paper-warm);
+              border-radius:24px 24px 0 0;
+              padding:1.8rem 1.5rem 2.5rem;
+              width:100%;max-width:520px;
+              animation:slideUp 0.3s ease;">
+    <div style="width:36px;height:4px;background:var(--border);
+                border-radius:2px;margin:0 auto 1.4rem;"></div>
+    <div style="font-family:'Cormorant Garamond',serif;
+                font-size:1.4rem;font-weight:700;
+                color:var(--ink);margin-bottom:0.3rem;">
+      Quick intro 👋
+    </div>
+    <div style="font-size:0.82rem;color:var(--ink-light);
+                margin-bottom:1.4rem;line-height:1.5;">
+      Just once — we'll remember you for next time.
+    </div>
+    <div style="margin-bottom:1rem;">
+      <label style="font-size:0.76rem;font-weight:600;
+                    color:var(--ink-mid);display:block;
+                    margin-bottom:0.4rem;">
+        Your full name
+      </label>
+      <input id="byr-name" type="text"
+             placeholder="e.g. Priya Sharma"
+             autocomplete="name"
+             style="width:100%;padding:0.8rem 1rem;
+                    border:1.5px solid var(--border);
+                    border-radius:var(--radius-sm);
+                    font-family:'Plus Jakarta Sans',sans-serif;
+                    font-size:0.95rem;background:white;
+                    color:var(--ink);outline:none;
+                    transition:border-color 0.2s;">
+    </div>
+    <div style="margin-bottom:1.4rem;">
+      <label style="font-size:0.76rem;font-weight:600;
+                    color:var(--ink-mid);display:block;
+                    margin-bottom:0.4rem;">
+        WhatsApp number
+      </label>
+      <input id="byr-phone" type="tel"
+             placeholder="98765 43210"
+             autocomplete="tel"
+             style="width:100%;padding:0.8rem 1rem;
+                    border:1.5px solid var(--border);
+                    border-radius:var(--radius-sm);
+                    font-family:'Plus Jakarta Sans',sans-serif;
+                    font-size:0.95rem;background:white;
+                    color:var(--ink);outline:none;
+                    transition:border-color 0.2s;">
+    </div>
+    <button onclick="buyerSheet1Next()"
+            style="width:100%;background:var(--ink);
+                   color:white;border:none;
+                   padding:0.95rem;
+                   border-radius:var(--radius-sm);
+                   font-family:'Plus Jakarta Sans',sans-serif;
+                   font-size:0.95rem;font-weight:700;
+                   cursor:pointer;transition:all 0.2s;">
+      Continue →
+    </button>
+    <div style="text-align:center;margin-top:0.9rem;
+                font-size:0.74rem;color:var(--ink-faint);">
+      Your details stay on your phone only.
+    </div>
+  </div>
+
+  <!-- SHEET 2: Address + Note + Confirm -->
+  <div id="buyer-sheet-2"
+       style="display:none;background:var(--paper-warm);
+              border-radius:24px 24px 0 0;
+              padding:1.8rem 1.5rem 2.5rem;
+              width:100%;max-width:520px;
+              animation:slideUp 0.3s ease;">
+    <div style="width:36px;height:4px;background:var(--border);
+                border-radius:2px;margin:0 auto 1.4rem;"></div>
+
+    <!-- Product summary -->
+    <div id="byr-product-card"
+         style="background:white;border:1px solid var(--border-light);
+                border-radius:var(--radius-sm);
+                padding:0.9rem 1rem;
+                margin-bottom:1.2rem;
+                display:flex;align-items:center;gap:0.9rem;">
+      <div id="byr-product-img"
+           style="width:52px;height:52px;border-radius:8px;
+                  background:var(--paper-deep);
+                  display:flex;align-items:center;
+                  justify-content:center;font-size:1.6rem;
+                  flex-shrink:0;overflow:hidden;"></div>
+      <div>
+        <div id="byr-product-name"
+             style="font-weight:700;font-size:0.9rem;
+                    color:var(--ink);margin-bottom:0.2rem;"></div>
+        <div id="byr-product-price"
+             style="font-family:'Cormorant Garamond',serif;
+                    font-size:1.1rem;font-weight:700;
+                    color:var(--earth);"></div>
+      </div>
+    </div>
+
+    <!-- Buyer name display (read-only) -->
+    <div id="byr-greeting"
+         style="font-size:0.82rem;color:var(--ink-light);
+                margin-bottom:1rem;"></div>
+
+    <!-- Address -->
+    <div style="margin-bottom:1rem;">
+      <label style="font-size:0.76rem;font-weight:600;
+                    color:var(--ink-mid);display:block;
+                    margin-bottom:0.4rem;">
+        Delivery address
+      </label>
+      <textarea id="byr-address"
+                placeholder="Flat / Building, Area, City — Pincode"
+                rows="2"
+                style="width:100%;padding:0.8rem 1rem;
+                       border:1.5px solid var(--border);
+                       border-radius:var(--radius-sm);
+                       font-family:'Plus Jakarta Sans',sans-serif;
+                       font-size:0.88rem;background:white;
+                       color:var(--ink);outline:none;resize:none;
+                       transition:border-color 0.2s;
+                       line-height:1.5;"></textarea>
+    </div>
+
+    <!-- Optional note -->
+    <div style="margin-bottom:1.4rem;">
+      <label style="font-size:0.76rem;font-weight:600;
+                    color:var(--ink-mid);display:block;
+                    margin-bottom:0.4rem;">
+        Note for seller
+        <span style="font-weight:400;color:var(--ink-faint);">
+          (optional)
+        </span>
+      </label>
+      <input id="byr-note" type="text"
+             placeholder="e.g. Less spicy, gift wrap, etc."
+             style="width:100%;padding:0.8rem 1rem;
+                    border:1.5px solid var(--border);
+                    border-radius:var(--radius-sm);
+                    font-family:'Plus Jakarta Sans',sans-serif;
+                    font-size:0.88rem;background:white;
+                    color:var(--ink);outline:none;
+                    transition:border-color 0.2s;">
+    </div>
+
+    <!-- Send button -->
+    <button onclick="buyerSendOrder()"
+            id="byr-send-btn"
+            style="width:100%;background:#25D366;
+                   color:white;border:none;padding:0.95rem;
+                   border-radius:var(--radius-sm);
+                   font-family:'Plus Jakarta Sans',sans-serif;
+                   font-size:0.95rem;font-weight:700;
+                   cursor:pointer;transition:all 0.2s;
+                   display:flex;align-items:center;
+                   justify-content:center;gap:0.5rem;">
+      💬 Send order on WhatsApp
+    </button>
+
+    <div style="text-align:center;margin-top:0.8rem;">
+      <span onclick="buyerEditDetails()"
+            style="font-size:0.74rem;color:var(--ink-faint);
+                   cursor:pointer;text-decoration:underline;">
+        Wrong name or number? Edit
+      </span>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════ SELLER DASHBOARD SLIDE PANEL ════ -->
+<div id="dash-panel-overlay"
+     onclick="if(event.target===this)closeDashPanel()"
+     style="display:none;position:fixed;inset:0;
+            z-index:700;
+            background:rgba(26,15,10,0.55);
+            backdrop-filter:blur(4px);
+            align-items:flex-end;
+            justify-content:center;">
+  <div style="background:var(--paper-warm);
+              border-radius:24px 24px 0 0;
+              padding:1.5rem 1.5rem 2.5rem;
+              width:100%;max-width:600px;
+              max-height:85vh;overflow-y:auto;
+              animation:slideUp 0.3s ease;">
+    <div style="width:36px;height:4px;
+                background:var(--border);
+                border-radius:2px;
+                margin:0 auto 1.2rem;"></div>
+    <div style="display:flex;align-items:center;
+                justify-content:space-between;
+                margin-bottom:1.2rem;">
+      <div style="font-family:'Cormorant Garamond',
+                  serif;font-size:1.3rem;
+                  font-weight:700;color:var(--ink);">
+        Store Analytics
+      </div>
+      <button onclick="closeDashPanel()"
+              style="background:none;border:none;
+                     font-size:1.2rem;cursor:pointer;
+                     color:var(--ink-light);">✕</button>
+    </div>
+
+    <!-- Dashboard tabs -->
+    <div class="dash-tabs">
+      <button class="dash-tab on"
+              onclick="switchDashTab('pending',this)">
+        Pending
+        <span class="dash-badge"
+              id="dash-pending-count">0</span>
+      </button>
+      <button class="dash-tab"
+              onclick="switchDashTab('accepted',this)">
+        Accepted
+      </button>
+      <button class="dash-tab"
+              onclick="switchDashTab('analytics',this)">
+        Analytics
+      </button>
+    </div>
+
+    <div id="dash-pending" class="dash-panel">
+      <div id="dash-pending-list"
+           class="dash-order-list"></div>
+    </div>
+    <div id="dash-accepted" class="dash-panel"
+         style="display:none">
+      <div id="dash-accepted-list"
+           class="dash-order-list"></div>
+    </div>
+    <div id="dash-analytics" class="dash-panel"
+         style="display:none">
+      <div class="dash-stats-grid">
+        <div class="dash-stat">
+          <div class="dash-stat-num"
+               id="an-total-orders">0</div>
+          <div class="dash-stat-label">
+            Total Orders
+          </div>
+        </div>
+        <div class="dash-stat">
+          <div class="dash-stat-num"
+               id="an-revenue">₹0</div>
+          <div class="dash-stat-label">
+            Est. Revenue
+          </div>
+        </div>
+        <div class="dash-stat">
+          <div class="dash-stat-num"
+               id="an-this-week">0</div>
+          <div class="dash-stat-label">
+            This Week
+          </div>
+        </div>
+        <div class="dash-stat">
+          <div class="dash-stat-num"
+               id="an-top-product">—</div>
+          <div class="dash-stat-label">
+            Top Product
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════ ASK SELLER BOTTOM SHEET ════ -->
+<div id="enq-overlay"
+     onclick="if(event.target===this)closeEnqSheet()"
+     style="display:none;position:fixed;inset:0;
+            z-index:650;
+            background:rgba(26,15,10,0.55);
+            backdrop-filter:blur(4px);
+            align-items:flex-end;
+            justify-content:center;">
+  <div style="background:var(--paper-warm);
+              border-radius:24px 24px 0 0;
+              padding:1.5rem 1.5rem 2.5rem;
+              width:100%;max-width:520px;
+              animation:slideUp 0.3s ease;">
+    <div style="width:36px;height:4px;
+                background:var(--border);
+                border-radius:2px;
+                margin:0 auto 1.2rem;"></div>
+    <div style="display:flex;align-items:center;
+                justify-content:space-between;
+                margin-bottom:0.3rem;">
+      <div style="font-family:'Cormorant Garamond',
+                  serif;font-size:1.3rem;
+                  font-weight:700;color:var(--ink);">
+        Ask the seller
+      </div>
+      <button onclick="closeEnqSheet()"
+              style="background:none;border:none;
+                     font-size:1.2rem;cursor:pointer;
+                     color:var(--ink-light);">✕</button>
+    </div>
+    <div style="font-size:0.8rem;color:var(--ink-light);
+                margin-bottom:1.2rem;">
+      Your message goes directly to the seller
+      on WhatsApp.
+    </div>
+
+    <div id="enq-sheet-form">
+      <div class="fg">
+        <label class="fl">Your Name</label>
+        <input type="text" class="fi" id="eq-name"
+               placeholder="Your name"
+               autocomplete="name">
+      </div>
+      <div class="fg">
+        <label class="fl">WhatsApp Number</label>
+        <input type="tel" class="fi" id="eq-phone"
+               placeholder="98765 43210"
+               autocomplete="tel">
+      </div>
+      <div class="fg">
+        <label class="fl">What are you asking about?</label>
+        <input type="text" class="fi" id="eq-prod"
+               placeholder="e.g. Hair Growth Oil">
+      </div>
+      <div class="fg">
+        <label class="fl">Your message</label>
+        <textarea class="ft" id="eq-note"
+                  placeholder="Tell the seller
+                  what you'd like to know..."
+                  rows="3"></textarea>
+      </div>
+      <button class="enq-submit"
+              onclick="submitEnq()">
+        💬 Send on WhatsApp
+      </button>
+    </div>
+
+    <div class="enq-success" id="enq-success"
+         style="display:none">
+      <div class="enq-success-icon">🎉</div>
+      <div class="enq-success-title serif">Sent!</div>
+      <div class="enq-success-sub">
+        WhatsApp is open with your message.
+        The seller will reply shortly.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Slide up animation -->
+
+<div class="pg" id="pg-admin">
+  <div class="admin-wrap">
+
+    <!-- Header -->
+    <div class="admin-hdr">
+      <div>
+        <div class="admin-title">
+          Nukkad Admin
+        </div>
+        <div class="admin-sub">
+          Only visible to you, Praveen.
+        </div>
+      </div>
+      <button class="admin-refresh-btn"
+              onclick="loadAdminData()">
+        ↻ Refresh
+      </button>
+    </div>
+
+    <!-- Overview stats -->
+    <div class="admin-stats-grid" id="admin-stats">
+      <div class="admin-stat-card">
+        <div class="admin-stat-num"
+             id="adm-total-stores">—</div>
+        <div class="admin-stat-label">
+          Total Stores
+        </div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="admin-stat-num"
+             id="adm-active-stores">—</div>
+        <div class="admin-stat-label">
+          Taking Orders
+        </div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="admin-stat-num"
+             id="adm-total-orders">—</div>
+        <div class="admin-stat-label">
+          Total Orders
+        </div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="admin-stat-num"
+             id="adm-week-orders">—</div>
+        <div class="admin-stat-label">
+          This Week
+        </div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="admin-stat-num"
+             id="adm-gmv">—</div>
+        <div class="admin-stat-label">
+          Est. GMV
+        </div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="admin-stat-num"
+             id="adm-total-users">—</div>
+        <div class="admin-stat-label">
+          Registered Users
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="admin-tabs">
+      <button class="admin-tab on"
+              id="adm-tab-stores"
+              onclick="switchAdminTab('stores',this)">
+        Stores
+      </button>
+      <button class="admin-tab"
+              id="adm-tab-orders"
+              onclick="switchAdminTab('orders',this)">
+        Orders
+      </button>
+      <button class="admin-tab"
+              id="adm-tab-users"
+              onclick="switchAdminTab('users',this)">
+        Users
+      </button>
+    </div>
+
+    <!-- Stores panel -->
+    <div id="adm-panel-stores" class="admin-panel">
+      <div id="adm-stores-list"></div>
+    </div>
+
+    <!-- Orders panel -->
+    <div id="adm-panel-orders"
+         class="admin-panel"
+         style="display:none">
+      <div id="adm-orders-list"></div>
+    </div>
+
+    <!-- Users panel -->
+    <div id="adm-panel-users"
+         class="admin-panel"
+         style="display:none">
+      <div id="adm-users-list"></div>
+    </div>
+
+  </div>
+</div>
+
+<div id="cover-editor-overlay"
+     onclick="if(event.target===this)
+              closeCoverEditor()"
+     style="display:none;position:fixed;inset:0;
+            z-index:750;
+            background:rgba(26,15,10,0.6);
+            backdrop-filter:blur(4px);
+            align-items:flex-end;
+            justify-content:center;">
+  <div class="cover-editor">
+    <div style="width:36px;height:4px;
+                background:var(--border);
+                border-radius:2px;
+                margin:0 auto 1.2rem;"></div>
+    <div style="display:flex;align-items:center;
+                justify-content:space-between;
+                margin-bottom:0.4rem;">
+      <div style="font-family:'Cormorant Garamond',
+                  serif;font-size:1.3rem;
+                  font-weight:700;color:var(--ink);">
+        Cover wall
+      </div>
+      <button onclick="closeCoverEditor()"
+              style="background:none;border:none;
+                     font-size:1.2rem;cursor:pointer;
+                     color:var(--ink-light);">✕</button>
+    </div>
+    <div style="font-size:0.78rem;color:var(--ink-light);
+                margin-bottom:1.2rem;line-height:1.5;">
+      Upload up to 8 photos. They'll float across
+      your cover — products, team, brand moments,
+      anything that tells your story.
+    </div>
+
+    <!-- Photo grid — 8 slots -->
+    <div class="cover-photo-grid" id="cover-photo-grid">
+    </div>
+
+    <!-- Hidden file input -->
+    <input type="file" id="cover-file-input"
+           accept="image/*" style="display:none"
+           onchange="handleCoverPhotoUpload(event)">
+
+    <div style="display:flex;gap:0.6rem;
+                margin-top:0.8rem;">
+      <button onclick="saveCoverPhotos()"
+              id="cover-save-btn"
+              style="flex:1;background:var(--ink);
+                     color:white;border:none;
+                     padding:0.85rem;
+                     border-radius:var(--radius-sm);
+                     font-family:'Plus Jakarta Sans',
+                     sans-serif;font-size:0.86rem;
+                     font-weight:700;cursor:pointer;">
+        Save cover
+      </button>
+      <button onclick="resetCoverPhotos()"
+              style="background:white;
+                     border:1.5px solid var(--border);
+                     color:var(--ink-mid);
+                     padding:0.85rem 1rem;
+                     border-radius:var(--radius-sm);
+                     font-family:'Plus Jakarta Sans',
+                     sans-serif;font-size:0.86rem;
+                     font-weight:600;cursor:pointer;">
+        Reset
+      </button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
