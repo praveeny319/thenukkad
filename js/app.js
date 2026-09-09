@@ -43,11 +43,30 @@ function adminIsOwner(handle) {
 // ═══════════════════════════════════
 // SUPABASE
 // ═══════════════════════════════════
-const { createClient } = supabase;
-const sb = createClient(
-  'https://pgrmaugomtcccplbphke.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBncm1hdWdvbXRjY2NwbGJwaGtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3NjgxODEsImV4cCI6MjA5MDM0NDE4MX0.nHyA2fFl2DtheJ1CpTaW2QIQPFNQZ1p9RcLuMyDZ43Y'
-);
+function initSupabase() {
+  if (typeof supabase === 'undefined' ||
+      !supabase.createClient) {
+    return null;
+  }
+  const { createClient } = supabase;
+  return createClient(
+    'https://pgrmaugomtcccplbphke.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBncm1hdWdvbXRjY2NwbGJwaGtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3NjgxODEsImV4cCI6MjA5MDM0NDE4MX0.nHyA2fFl2DtheJ1CpTaW2QIQPFNQZ1p9RcLuMyDZ43Y'
+  );
+}
+
+let sb = initSupabase();
+
+if (!sb) {
+  let retries = 0;
+  const retryInterval = setInterval(() => {
+    sb = initSupabase();
+    retries++;
+    if (sb || retries >= 60) {
+      clearInterval(retryInterval);
+    }
+  }, 50);
+}
 
 // ═══════════════════════════════════
 // CONSTANTS
@@ -168,6 +187,18 @@ let productImageFiles = {}; // { prodId: File }
 // ═══════════════════════════════════
 window.addEventListener('load', async () => {
   buildEmojiPicker();
+
+  // Wait for Supabase to be ready — Safari fix
+  if (!sb) {
+    await new Promise((resolve) => {
+      const wait = setInterval(() => {
+        if (sb) { clearInterval(wait); resolve(); }
+      }, 50);
+      setTimeout(() => {
+        clearInterval(wait); resolve();
+      }, 3000);
+    });
+  }
 
   // URL routing first — check if this is a
   // direct store link BEFORE loading anything else
