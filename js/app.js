@@ -168,22 +168,20 @@ let productImageFiles = {}; // { prodId: File }
 // ═══════════════════════════════════
 window.addEventListener('load', async () => {
   buildEmojiPicker();
-  await loadStores();
-  await initAuth();
 
-  // URL routing
+  // URL routing first — check if this is a
+  // direct store link BEFORE loading anything else
   const params = new URLSearchParams(window.location.search);
   const customerParam = params.get('customer');
   const storeParam = params.get('store');
   const productParam = params.get('product');
+  const isDirectStoreLink = storeParam && !params.get('page');
 
-  if (customerParam) {
-    // Shared customer profile link — always open it
-    await loadCustomerProfile(customerParam);
-
-  } else if (storeParam && !params.get('page')) {
-    // Direct shared store link — ALWAYS fetch
-    // directly from Supabase, never rely on cache
+  if (isDirectStoreLink) {
+    // For direct store links — fetch store
+    // directly from Supabase WITHOUT waiting
+    // for loadStores() or initAuth()
+    // This fixes Safari ITP blocking issue
     try {
       const { data: freshStore, error: linkErr } =
         await sb
@@ -193,40 +191,50 @@ window.addEventListener('load', async () => {
           .single();
 
       if (linkErr || !freshStore) {
+        // Store not found — load normally
+        await loadStores();
+        await initAuth();
         showToast('Store not found');
         showPg('home');
       } else {
         freshStore.products = freshStore.products || [];
-        const ei = allStores.findIndex(
-          s => s.handle === storeParam);
-        if (ei > -1) allStores[ei] = freshStore;
-        else allStores.push(freshStore);
+        allStores.push(freshStore);
+
+        // Open store immediately
         await openStore(storeParam);
         if (productParam) {
           openProductDetail(storeParam, productParam);
         }
+
+        // Load auth and rest of stores
+        // in background — don't block store view
+        loadStores().catch(console.warn);
+        initAuth().catch(console.warn);
       }
     } catch(e) {
       console.error('Store link error:', e);
-      const s = allStores.find(
-        x => x.handle === storeParam);
-      if (s) {
-        await openStore(storeParam);
-      } else {
-        showToast('Check your connection and try again');
-        showPg('home');
-      }
+      // Fallback — load normally
+      await loadStores();
+      await initAuth();
+      showPg('home');
     }
 
+  } else if (customerParam) {
+    // Customer profile link
+    await loadStores();
+    await initAuth();
+    await loadCustomerProfile(customerParam);
+
   } else {
-    // All other cases — restore from localStorage
-    // This covers: normal refresh, back/forward,
-    // internal navigation refresh
+    // Normal app load — load everything first
+    await loadStores();
+    await initAuth();
+
+    // Restore last page from localStorage
     const lastRaw = localStorage.getItem('nukkad_last_page');
     const last = lastRaw ? JSON.parse(lastRaw) : null;
 
     if (last && last.page === 'store' && last.store) {
-      // Was on a store page
       const s = allStores.find(x => x.handle === last.store);
       if (s) {
         await openStore(last.store);
@@ -234,14 +242,11 @@ window.addEventListener('load', async () => {
         showPg('market');
       }
     } else if (last && last.page && last.page !== 'create' && last.page !== 'market') {
-      // Was on home, market, profile, customer etc
       showPg(last.page);
     } else {
-      // No saved position or was on create — go home
       showPg('home');
     }
 
-    // Clean up URL if it has stale page= params
     if (window.location.search) {
       history.replaceState(
         { page: last?.page || 'home' },
@@ -250,7 +255,6 @@ window.addEventListener('load', async () => {
       );
     }
   }
-
 });
 
 window.addEventListener('popstate', (e) => {
