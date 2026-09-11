@@ -209,27 +209,55 @@ window.addEventListener('load', async () => {
   const isDirectStoreLink = storeParam && !params.get('page');
 
   if (isDirectStoreLink) {
-    // For direct store links — fetch store
-    // directly from Supabase WITHOUT waiting
-    // for loadStores() or initAuth()
-    // This fixes Safari ITP blocking issue
+    // SAFARI FIX: Use plain fetch() REST API
+    // Safari ITP blocks Supabase JS client on
+    // first visit because it uses cookies and
+    // localStorage internally.
+    // Plain fetch() with Authorization header
+    // is a simple HTTP request — Safari ITP
+    // cannot block it.
+    const SURL =
+      'https://pgrmaugomtcccplbphke.supabase.co';
+    const SKEY =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBncm1hdWdvbXRjY2NwbGJwaGtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3NjgxODEsImV4cCI6MjA5MDM0NDE4MX0.nHyA2fFl2DtheJ1CpTaW2QIQPFNQZ1p9RcLuMyDZ43Y';
+    const HDRS = {
+      'apikey': SKEY,
+      'Authorization': 'Bearer ' + SKEY,
+      'Content-Type': 'application/json'
+    };
     try {
-      const { data: freshStore, error: linkErr } =
-        await sb
-          .from('stores')
-          .select('*, products(*)')
-          .eq('handle', storeParam)
-          .single();
+      // Fetch store — plain HTTP, no Supabase client
+      const storeRes = await fetch(
+        SURL + '/rest/v1/stores?handle=eq.' +
+        encodeURIComponent(storeParam) + '&select=*',
+        { headers: HDRS }
+      );
+      const stores = await storeRes.json();
+      const freshStore = Array.isArray(stores)
+        ? stores[0] : null;
 
-      if (linkErr || !freshStore) {
-        // Store not found — load normally
+      if (!freshStore) {
         await loadStores();
         await initAuth();
         showToast('Store not found');
         showPg('home');
       } else {
-        freshStore.products = freshStore.products || [];
-        allStores.push(freshStore);
+        // Fetch products — plain HTTP
+        const prodRes = await fetch(
+          SURL + '/rest/v1/products?store_handle=eq.' +
+          encodeURIComponent(storeParam) +
+          '&select=*&order=created_at.asc',
+          { headers: HDRS }
+        );
+        const products = await prodRes.json();
+        freshStore.products = Array.isArray(products)
+          ? products.filter(p => !p.is_hidden) : [];
+
+        // Add to allStores cache
+        const ei = allStores.findIndex(
+          s => s.handle === storeParam);
+        if (ei > -1) allStores[ei] = freshStore;
+        else allStores.push(freshStore);
 
         // Open store immediately
         await openStore(storeParam);
@@ -237,14 +265,12 @@ window.addEventListener('load', async () => {
           openProductDetail(storeParam, productParam);
         }
 
-        // Load auth and rest of stores
-        // in background — don't block store view
+        // Load auth in background
         loadStores().catch(console.warn);
         initAuth().catch(console.warn);
       }
     } catch(e) {
       console.error('Store link error:', e);
-      // Fallback — load normally
       await loadStores();
       await initAuth();
       showPg('home');
