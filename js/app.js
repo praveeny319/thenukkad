@@ -209,71 +209,43 @@ window.addEventListener('load', async () => {
   const isDirectStoreLink = storeParam && !params.get('page');
 
   if (isDirectStoreLink) {
-    // SAFARI FIX: Use plain fetch() REST API
-    // Safari ITP blocks Supabase JS client on
-    // first visit because it uses cookies and
-    // localStorage internally.
-    // Plain fetch() with Authorization header
-    // is a simple HTTP request — Safari ITP
-    // cannot block it.
-    const SURL =
-      'https://pgrmaugomtcccplbphke.supabase.co';
-    const SKEY =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBncm1hdWdvbXRjY2NwbGJwaGtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3NjgxODEsImV4cCI6MjA5MDM0NDE4MX0.nHyA2fFl2DtheJ1CpTaW2QIQPFNQZ1p9RcLuMyDZ43Y';
-    const HDRS = {
-      'apikey': SKEY,
-      'Authorization': 'Bearer ' + SKEY,
-      'Content-Type': 'application/json'
-    };
     try {
-      // Fetch store — plain HTTP, no Supabase client
-      const storeRes = await fetch(
-        SURL + '/rest/v1/stores?handle=eq.' +
-        encodeURIComponent(storeParam) + '&select=*',
-        { headers: HDRS }
-      );
-      const stores = await storeRes.json();
-      const freshStore = Array.isArray(stores)
-        ? stores[0] : null;
+      const { data: freshStore, error: linkErr } =
+        await sb
+          .from('stores')
+          .select('*, products(*)')
+          .eq('handle', storeParam)
+          .single();
 
-      if (!freshStore) {
+      if (linkErr || !freshStore) {
         await loadStores();
         await initAuth();
         showToast('Store not found');
         showPg('home');
       } else {
-        // Fetch products — plain HTTP
-        const prodRes = await fetch(
-          SURL + '/rest/v1/products?store_handle=eq.' +
-          encodeURIComponent(storeParam) +
-          '&select=*&order=created_at.asc',
-          { headers: HDRS }
-        );
-        const products = await prodRes.json();
-        freshStore.products = Array.isArray(products)
-          ? products.filter(p => !p.is_hidden) : [];
-
-        // Add to allStores cache
+        freshStore.products =
+          freshStore.products || [];
         const ei = allStores.findIndex(
           s => s.handle === storeParam);
         if (ei > -1) allStores[ei] = freshStore;
         else allStores.push(freshStore);
-
-        // Open store immediately
         await openStore(storeParam);
         if (productParam) {
           openProductDetail(storeParam, productParam);
         }
-
-        // Load auth in background
         loadStores().catch(console.warn);
         initAuth().catch(console.warn);
       }
     } catch(e) {
       console.error('Store link error:', e);
-      await loadStores();
-      await initAuth();
-      showPg('home');
+      const s = allStores.find(
+        x => x.handle === storeParam);
+      if (s) {
+        await openStore(storeParam);
+      } else {
+        showToast('Check your connection and try again');
+        showPg('home');
+      }
     }
 
   } else if (customerParam) {
