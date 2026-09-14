@@ -1730,3 +1730,187 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--paper);color:va
   from { transform: translateY(100%); opacity: 0; }
   to   { transform: translateY(0);    opacity: 1; }
 }
+
+/* ════ SHOPPING CART ════ */
+#cart-fab{
+  position:fixed;bottom:5rem;left:1rem;
+  z-index:340;background:var(--ink);
+  color:white;border:none;
+  border-radius:100px;
+  padding:0.6rem 1rem;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:0.82rem;font-weight:700;
+  cursor:pointer;display:none;
+  align-items:center;gap:0.5rem;
+  box-shadow:0 4px 20px rgba(0,0,0,0.25);
+  transition:all 0.3s;
+}
+#cart-fab.visible{display:flex;}
+#cart-fab:hover{background:var(--earth);}
+#cart-count{
+  background:#e04040;color:white;
+  border-radius:50%;width:20px;height:20px;
+  font-size:0.7rem;font-weight:700;
+  display:flex;align-items:center;
+  justify-content:center;
+}
+#cart-total-fab{
+  font-size:0.78rem;
+  color:rgba(255,255,255,0.8);
+}
+
+/* Cart panel */
+#cart-overlay{
+  display:none;position:fixed;inset:0;
+  z-index:600;
+  background:rgba(26,15,10,0.6);
+  backdrop-filter:blur(4px);
+  align-items:flex-end;
+  justify-content:center;
+}
+#cart-overlay.open{display:flex;}
+.cart-panel{
+  background:var(--paper-warm);
+  border-radius:24px 24px 0 0;
+  padding:1.5rem 1.5rem 2rem;
+  width:100%;max-width:520px;
+  max-height:85vh;overflow-y:auto;
+  animation:slideUp 0.3s ease;
+}
+.cart-header{
+  display:flex;align-items:center;
+  justify-content:space-between;
+  margin-bottom:1.2rem;
+}
+.cart-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.4rem;font-weight:700;
+  color:var(--ink);
+}
+.cart-close{
+  background:none;border:none;
+  font-size:1.3rem;cursor:pointer;
+  color:var(--ink-light);
+}
+.cart-store-name{
+  font-size:0.76rem;color:var(--ink-light);
+  margin-bottom:1rem;
+}
+.cart-items{
+  display:flex;flex-direction:column;
+  gap:0.7rem;margin-bottom:1.2rem;
+}
+.cart-item{
+  display:flex;align-items:center;
+  gap:0.8rem;background:white;
+  border-radius:12px;
+  padding:0.75rem 0.9rem;
+  border:1px solid var(--border-light);
+}
+.cart-item-img{
+  width:48px;height:48px;
+  border-radius:8px;object-fit:cover;
+  background:var(--paper-deep);
+  display:flex;align-items:center;
+  justify-content:center;font-size:1.4rem;
+  flex-shrink:0;overflow:hidden;
+}
+.cart-item-img img{
+  width:100%;height:100%;object-fit:cover;
+}
+.cart-item-info{flex:1;}
+.cart-item-name{
+  font-size:0.86rem;font-weight:600;
+  color:var(--ink);margin-bottom:0.15rem;
+}
+.cart-item-price{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1rem;font-weight:700;
+  color:var(--earth);
+}
+.cart-item-qty{
+  display:flex;align-items:center;
+  gap:0.4rem;flex-shrink:0;
+}
+.cart-qty-btn{
+  width:28px;height:28px;border-radius:50%;
+  border:1.5px solid var(--border);
+  background:white;color:var(--ink);
+  font-size:1rem;font-weight:700;
+  cursor:pointer;display:flex;
+  align-items:center;justify-content:center;
+  transition:all 0.2s;
+}
+.cart-qty-btn:hover{
+  background:var(--ink);color:white;
+  border-color:var(--ink);
+}
+.cart-qty-num{
+  font-size:0.9rem;font-weight:700;
+  color:var(--ink);min-width:20px;
+  text-align:center;
+}
+.cart-divider{
+  height:1px;background:var(--border-light);
+  margin:0.8rem 0;
+}
+.cart-total-row{
+  display:flex;align-items:center;
+  justify-content:space-between;
+  margin-bottom:1.2rem;
+}
+.cart-total-label{
+  font-size:0.88rem;font-weight:600;
+  color:var(--ink-mid);
+}
+.cart-total-amount{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.6rem;font-weight:700;
+  color:var(--ink);
+}
+.cart-checkout-btn{
+  width:100%;background:#25D366;
+  color:white;border:none;
+  padding:0.95rem;border-radius:12px;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:0.95rem;font-weight:700;
+  cursor:pointer;transition:all 0.2s;
+  display:flex;align-items:center;
+  justify-content:center;gap:0.5rem;
+}
+.cart-checkout-btn:hover{
+  background:#20BB5A;
+  transform:translateY(-1px);
+}
+.cart-clear-btn{
+  width:100%;background:none;
+  border:1.5px solid var(--border);
+  color:var(--ink-light);
+  padding:0.7rem;border-radius:12px;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:0.84rem;font-weight:600;
+  cursor:pointer;margin-top:0.6rem;
+  transition:all 0.2s;
+}
+.cart-clear-btn:hover{
+  border-color:#e04040;color:#e04040;
+}
+.sv-cart-btn{
+  background:white;
+  color:var(--ink);
+  border:1.5px solid var(--border);
+  padding:0.32rem 0.75rem;
+  border-radius:100px;
+  font-size:0.7rem;font-weight:700;
+  cursor:pointer;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  transition:all 0.2s;white-space:nowrap;
+  display:flex;align-items:center;gap:0.25rem;
+}
+.sv-cart-btn:hover{
+  background:var(--paper-deep);
+}
+.sv-cart-btn.in-cart{
+  background:var(--ink);color:white;
+  border-color:var(--ink);
+}

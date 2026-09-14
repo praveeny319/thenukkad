@@ -1667,5 +1667,41 @@
     </div>
   </div>
 </div>
+
+<!-- ════ CART FAB ════ -->
+<button id="cart-fab" onclick="openCart()">
+  🛒 Cart
+  <span id="cart-count">0</span>
+  <span id="cart-total-fab"></span>
+</button>
+
+<!-- ════ CART PANEL ════ -->
+<div id="cart-overlay"
+     onclick="if(event.target===this)closeCart()">
+  <div class="cart-panel">
+    <div class="cart-header">
+      <div class="cart-title">Your Cart 🛒</div>
+      <button class="cart-close"
+              onclick="closeCart()">✕</button>
+    </div>
+    <div class="cart-store-name"
+         id="cart-store-name"></div>
+    <div class="cart-items" id="cart-items"></div>
+    <div class="cart-divider"></div>
+    <div class="cart-total-row">
+      <div class="cart-total-label">Total</div>
+      <div class="cart-total-amount"
+           id="cart-total">₹0</div>
+    </div>
+    <button class="cart-checkout-btn"
+            onclick="cartCheckout()">
+      💬 Send order on WhatsApp
+    </button>
+    <button class="cart-clear-btn"
+            onclick="clearCart()">
+      Clear cart
+    </button>
+  </div>
+</div>
 </body>
 </html>

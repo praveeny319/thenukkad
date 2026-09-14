@@ -475,6 +475,8 @@ function showPg(name) {
   // Hide Ask FAB on all pages except store profile
   const fab = document.getElementById('chat-fab');
   if (fab) fab.classList.remove('visible');
+  const cartFab = document.getElementById('cart-fab');
+  if (cartFab) cartFab.classList.remove('visible');
   const footer = document.getElementById('site-footer');
   if (footer) footer.style.display = (name === 'home' || name === 'market') ? 'block' : 'none';
   window.scrollTo(0, 0);
@@ -634,6 +636,14 @@ async function openStore(handle) {
   if (!s) return;
   curStore = s;
 
+  // Clear cart if opening a different store
+  if (_cartStoreHandle && _cartStoreHandle !== handle) {
+    _cart = [];
+    _cartStoreHandle = null;
+    const fab = document.getElementById('cart-fab');
+    if (fab) fab.classList.remove('visible');
+  }
+
   // Remember store position for refresh
   localStorage.setItem('nukkad_last_page',
     JSON.stringify({ page: 'store', store: handle }));
@@ -739,7 +749,7 @@ async function openStore(handle) {
           <span class="sv-prod-price">₹${p.price}</span>
           ${finalOwner
             ? `<button class="sv-edit-btn" onclick="openEditProduct(event,'${handle}','${pId}')">✏️ Edit</button>`
-            : `<button class="sv-wa-btn" onclick="orderWA(event,'${safeName}','${p.price}')">Order</button>`
+            : `<div style="display:flex;gap:0.35rem;"><button class="sv-wa-btn" onclick="orderWA(event,'${safeName}','${p.price}')">Order</button><button class="sv-cart-btn" id="cart-btn-${pId}" data-product-name="${safeName}" onclick="addToCart(event,${JSON.stringify(p).replace(/"/g,'&quot;')},'${handle}')">+ Cart</button></div>`
           }
         </div>
       </div>
@@ -2967,18 +2977,33 @@ async function buyerSendOrder() {
   const po = _pendingOrder;
 
   // Build WhatsApp message FIRST
-  const productLine = po?.productName
-    ? `*${po.productName}*${po.price ? ' (₹'+po.price+')' : ''}`
-    : 'an item from your store';
-
-  const msg = encodeURIComponent(
-    `Hi! I want to order ${productLine}\n\n` +
-    `👤 ${buyer.name}\n` +
-    `📞 ${waPhone(buyer.phone)}\n` +
-    `📦 ${address}` +
-    (note ? `\n\n💬 ${note}` : '') +
-    `\n\n_Order via Nukkad 🌿_`
-  );
+  let msgBody;
+  if (po?.isCart) {
+    // Cart order — multiple items
+    const total = parseFloat(po.price) || 0;
+    msgBody =
+      `Hi! I want to order from your store:\n\n` +
+      `${po.productName}\n\n` +
+      `*Total: ₹${total.toLocaleString('en-IN')}*\n\n` +
+      `👤 ${buyer.name}\n` +
+      `📞 ${waPhone(buyer.phone)}\n` +
+      `📦 ${address}` +
+      (note ? `\n\n💬 ${note}` : '') +
+      `\n\n_Order via Nukkad 🌿_`;
+  } else {
+    // Single item order
+    const productLine = po?.productName
+      ? `*${po.productName}*${po.price ? ' (₹'+po.price+')' : ''}`
+      : 'an item from your store';
+    msgBody =
+      `Hi! I want to order ${productLine}\n\n` +
+      `👤 ${buyer.name}\n` +
+      `📞 ${waPhone(buyer.phone)}\n` +
+      `📦 ${address}` +
+      (note ? `\n\n💬 ${note}` : '') +
+      `\n\n_Order via Nukkad 🌿_`;
+  }
+  const msg = encodeURIComponent(msgBody);
 
   const phone = waPhone(curStore.whatsapp);
 
@@ -3024,6 +3049,238 @@ function closeBuyerFlow() {
   document.getElementById('buyer-sheet-1').style.display = 'none';
   document.getElementById('buyer-sheet-2').style.display = 'none';
   _pendingOrder = null;
+}
+
+// ═══════════════════════════════════
+// SHOPPING CART
+// Works within one store only
+// Clears when switching stores
+// ═══════════════════════════════════
+
+let _cart = []; // array of {product, qty}
+let _cartStoreHandle = null;
+
+function getCartTotal() {
+  return _cart.reduce((sum, item) =>
+    sum + (parseFloat(item.product.price) || 0)
+    * item.qty, 0);
+}
+
+function updateCartFab() {
+  const fab = document.getElementById('cart-fab');
+  const countEl = document.getElementById('cart-count');
+  const totalEl = document.getElementById(
+    'cart-total-fab');
+
+  const totalItems = _cart.reduce(
+    (sum, item) => sum + item.qty, 0);
+  const total = getCartTotal();
+
+  if (totalItems > 0 &&
+      document.getElementById('pg-store')
+        ?.classList.contains('on')) {
+    fab.classList.add('visible');
+    countEl.textContent = totalItems;
+    totalEl.textContent = '· ₹' +
+      total.toLocaleString('en-IN');
+  } else {
+    fab.classList.remove('visible');
+  }
+}
+
+function addToCart(e, product, storeHandle) {
+  e.stopPropagation();
+
+  // Clear cart if switching stores
+  if (_cartStoreHandle &&
+      _cartStoreHandle !== storeHandle) {
+    _cart = [];
+  }
+  _cartStoreHandle = storeHandle;
+
+  // Check if already in cart
+  const existing = _cart.find(
+    item => item.product.name === product.name);
+
+  if (existing) {
+    existing.qty += 1;
+  } else {
+    _cart.push({ product, qty: 1 });
+  }
+
+  // Update button to show in-cart state
+  updateCartButtons(storeHandle);
+  updateCartFab();
+  showToast(`${product.name} added to cart 🛒`);
+}
+
+function removeFromCart(productName) {
+  _cart = _cart.filter(
+    item => item.product.name !== productName);
+  if (_cart.length === 0) {
+    _cartStoreHandle = null;
+    document.getElementById('cart-fab')
+      .classList.remove('visible');
+  }
+  updateCartButtons(_cartStoreHandle);
+  updateCartFab();
+  renderCartItems();
+}
+
+function updateQty(productName, delta) {
+  const item = _cart.find(
+    i => i.product.name === productName);
+  if (!item) return;
+  item.qty += delta;
+  if (item.qty <= 0) {
+    removeFromCart(productName);
+    return;
+  }
+  updateCartFab();
+  renderCartItems();
+}
+
+function updateCartButtons(storeHandle) {
+  // Update all cart buttons on product cards
+  document.querySelectorAll('.sv-cart-btn')
+    .forEach(btn => {
+      const name = btn.dataset.productName;
+      const inCart = _cart.some(
+        item => item.product.name === name);
+      if (inCart) {
+        btn.classList.add('in-cart');
+        btn.textContent = '✓ Added';
+      } else {
+        btn.classList.remove('in-cart');
+        btn.textContent = '+ Cart';
+      }
+    });
+}
+
+function openCart() {
+  if (_cart.length === 0) {
+    showToast('Cart is empty — add some products!');
+    return;
+  }
+  renderCartItems();
+  document.getElementById('cart-overlay')
+    .classList.add('open');
+
+  const store = allStores.find(
+    s => s.handle === _cartStoreHandle);
+  document.getElementById('cart-store-name')
+    .textContent = store
+      ? '🛍️ ' + store.brand_name : '';
+}
+
+function closeCart() {
+  document.getElementById('cart-overlay')
+    .classList.remove('open');
+}
+
+function renderCartItems() {
+  const container = document.getElementById(
+    'cart-items');
+  const totalEl = document.getElementById(
+    'cart-total');
+
+  container.innerHTML = _cart.map(item => {
+    const imgHtml = item.product.image_url
+      ? `<div class="cart-item-img">
+           <img src="${item.product.image_url}"
+                alt="${item.product.name}">
+         </div>`
+      : `<div class="cart-item-img">
+           ${curStore?.emoji || '🛍️'}
+         </div>`;
+
+    return `<div class="cart-item">
+      ${imgHtml}
+      <div class="cart-item-info">
+        <div class="cart-item-name">
+          ${item.product.name}
+        </div>
+        <div class="cart-item-price">
+          ₹${(parseFloat(item.product.price) *
+            item.qty).toLocaleString('en-IN')}
+          ${item.qty > 1
+            ? `<span style="font-size:0.72rem;
+               color:var(--ink-light);
+               font-family:'Plus Jakarta Sans',
+               sans-serif;">
+               (₹${item.product.price} × ${item.qty})
+               </span>`
+            : ''}
+        </div>
+      </div>
+      <div class="cart-item-qty">
+        <button class="cart-qty-btn"
+                onclick="updateQty(
+                  '${item.product.name}', -1)">
+          −
+        </button>
+        <span class="cart-qty-num">
+          ${item.qty}
+        </span>
+        <button class="cart-qty-btn"
+                onclick="updateQty(
+                  '${item.product.name}', 1)">
+          +
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+
+  const total = getCartTotal();
+  totalEl.textContent =
+    '₹' + total.toLocaleString('en-IN');
+}
+
+function clearCart() {
+  _cart = [];
+  _cartStoreHandle = null;
+  closeCart();
+  document.getElementById('cart-fab')
+    .classList.remove('visible');
+  updateCartButtons(null);
+  showToast('Cart cleared');
+}
+
+async function cartCheckout() {
+  if (_cart.length === 0) return;
+
+  const store = allStores.find(
+    s => s.handle === _cartStoreHandle);
+  if (!store?.whatsapp) {
+    showToast('Store contact not available');
+    return;
+  }
+
+  // Build order items list
+  const itemsList = _cart.map((item, i) =>
+    `${i+1}. *${item.product.name}* × ${item.qty} — ₹${
+      (parseFloat(item.product.price) * item.qty)
+        .toLocaleString('en-IN')}`
+  ).join('\n');
+
+  const total = getCartTotal();
+
+  // Use buyer flow for name/address
+  _pendingOrder = {
+    productName: itemsList,
+    price: total.toString(),
+    imageUrl: '',
+    isCart: true
+  };
+
+  closeCart();
+
+  const buyer = getBuyer();
+  if (buyer?.name && buyer?.phone) {
+    showBuyerSheet2();
+  } else {
+    showBuyerSheet1();
+  }
 }
 
 function openDashPanel() {
