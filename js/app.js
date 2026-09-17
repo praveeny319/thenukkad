@@ -43,30 +43,11 @@ function adminIsOwner(handle) {
 // ═══════════════════════════════════
 // SUPABASE
 // ═══════════════════════════════════
-function initSupabase() {
-  if (typeof supabase === 'undefined' ||
-      !supabase.createClient) {
-    return null;
-  }
-  const { createClient } = supabase;
-  return createClient(
-    'https://pgrmaugomtcccplbphke.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBncm1hdWdvbXRjY2NwbGJwaGtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3NjgxODEsImV4cCI6MjA5MDM0NDE4MX0.nHyA2fFl2DtheJ1CpTaW2QIQPFNQZ1p9RcLuMyDZ43Y'
-  );
-}
-
-let sb = initSupabase();
-
-if (!sb) {
-  let retries = 0;
-  const retryInterval = setInterval(() => {
-    sb = initSupabase();
-    retries++;
-    if (sb || retries >= 60) {
-      clearInterval(retryInterval);
-    }
-  }, 50);
-}
+const { createClient } = supabase;
+const sb = createClient(
+  'https://pgrmaugomtcccplbphke.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBncm1hdWdvbXRjY2NwbGJwaGtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3NjgxODEsImV4cCI6MjA5MDM0NDE4MX0.nHyA2fFl2DtheJ1CpTaW2QIQPFNQZ1p9RcLuMyDZ43Y'
+);
 
 // ═══════════════════════════════════
 // CONSTANTS
@@ -187,28 +168,19 @@ let productImageFiles = {}; // { prodId: File }
 // ═══════════════════════════════════
 window.addEventListener('load', async () => {
   buildEmojiPicker();
+  await loadStores();
+  await initAuth();
 
-  // Wait for Supabase to be ready — Safari fix
-  if (!sb) {
-    await new Promise((resolve) => {
-      const wait = setInterval(() => {
-        if (sb) { clearInterval(wait); resolve(); }
-      }, 50);
-      setTimeout(() => {
-        clearInterval(wait); resolve();
-      }, 3000);
-    });
-  }
-
-  // URL routing first — check if this is a
-  // direct store link BEFORE loading anything else
-  const params = new URLSearchParams(window.location.search);
+  const params = new URLSearchParams(
+    window.location.search);
   const customerParam = params.get('customer');
   const storeParam = params.get('store');
   const productParam = params.get('product');
-  const isDirectStoreLink = storeParam && !params.get('page');
 
-  if (isDirectStoreLink) {
+  if (customerParam) {
+    await loadCustomerProfile(customerParam);
+
+  } else if (storeParam && !params.get('page')) {
     try {
       const { data: freshStore, error: linkErr } =
         await sb
@@ -218,8 +190,6 @@ window.addEventListener('load', async () => {
           .single();
 
       if (linkErr || !freshStore) {
-        await loadStores();
-        await initAuth();
         showToast('Store not found');
         showPg('home');
       } else {
@@ -233,8 +203,6 @@ window.addEventListener('load', async () => {
         if (productParam) {
           openProductDetail(storeParam, productParam);
         }
-        loadStores().catch(console.warn);
-        initAuth().catch(console.warn);
       }
     } catch(e) {
       console.error('Store link error:', e);
@@ -243,22 +211,12 @@ window.addEventListener('load', async () => {
       if (s) {
         await openStore(storeParam);
       } else {
-        showToast('Check your connection and try again');
+        showToast('Could not load store');
         showPg('home');
       }
     }
 
-  } else if (customerParam) {
-    // Customer profile link
-    await loadStores();
-    await initAuth();
-    await loadCustomerProfile(customerParam);
-
   } else {
-    // Normal app load — load everything first
-    await loadStores();
-    await initAuth();
-
     // Restore last page from localStorage
     const lastRaw = localStorage.getItem('nukkad_last_page');
     const last = lastRaw ? JSON.parse(lastRaw) : null;
