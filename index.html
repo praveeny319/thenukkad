@@ -33,83 +33,284 @@
 
 <!-- ════ LANDING ════ -->
 <div class="pg on" id="pg-home">
-  <div class="hero">
-    <div>
-      <div class="hero-eyebrow">🇮🇳 Built for Indian sellers</div>
-      <h1 class="hero-title serif">Apni dukaan. <em>Apna nukkad.</em></h1>
-      <p class="hero-body">Create a beautiful store profile in 5 minutes. Get your own link to share everywhere. Let customers explore your store and order directly on WhatsApp.</p>
-      <div class="hero-btns">
-        <button class="btn-primary" onclick="startCreate()">Create Your Store Free →</button>
-        <button class="btn-ghost" onclick="showPg('market')" style="display:none">Browse Stores</button>
+
+  <!-- ── HERO ───────────────────────── -->
+  <div class="lp-hero">
+    <div class="lp-hero-inner">
+      <div class="lp-eyebrow">
+        <span class="lp-eyebrow-dot"></span>
+        Apna store. Apna link. Seedha WhatsApp pe order.
       </div>
-      <div class="hero-stats">
-        <div class="stat-item"><div class="stat-num serif">5 min</div><div class="stat-label">To go live</div></div>
-        <div class="stat-item"><div class="stat-num serif">1 link</div><div class="stat-label">Share anywhere</div></div>
-        <div class="stat-item"><div class="stat-num serif">₹0</div><div class="stat-label">Free to start</div></div>
+      <h1 class="lp-title">
+        Har dukaan ka<br>
+        <em>apna nukkad.</em>
+      </h1>
+      <p class="lp-subtitle">
+        5 minutes mein apna online store banao.
+        Link share karo. Orders WhatsApp pe aane
+        do. Bilkul free.
+      </p>
+      <div class="lp-cta-row">
+        <button class="lp-btn-main"
+                onclick="startCreate()">
+          Apna store banao — free →
+        </button>
+      </div>
+      <div class="lp-link-preview">
+        <span class="lp-link-label">
+          Tumhara store link hoga:
+        </span>
+        <span class="lp-link-value">
+          thenukkad.store/<em>tumhara-naam</em>
+        </span>
       </div>
     </div>
-    <div class="hero-visual">
-      <div class="hero-card-stack">
-        <div class="hcard hcard-left">
-          <div class="hcard-cover" style="background:linear-gradient(135deg,#E8F4EA,#C2DEC8)">🧁</div>
-          <div class="hcard-body"><div class="hcard-name">Asha's Farshan</div><div class="hcard-tag">🥨 Snacks & Namkeen · Mumbai</div></div>
+    <div class="lp-hero-stats">
+      <div class="lp-stat">
+        <div class="lp-stat-num">5 min</div>
+        <div class="lp-stat-label">Mein live</div>
+      </div>
+      <div class="lp-stat-div"></div>
+      <div class="lp-stat">
+        <div class="lp-stat-num">₹0</div>
+        <div class="lp-stat-label">Free forever</div>
+      </div>
+      <div class="lp-stat-div"></div>
+      <div class="lp-stat">
+        <div class="lp-stat-num">1 link</div>
+        <div class="lp-stat-label">Kahin bhi share karo</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TICKER ──────────────────────── -->
+  <div class="lp-ticker-wrap">
+    <div class="lp-ticker">
+      <div class="lp-ticker-inner">
+        <span>🧁 Home Baker · Bandra</span>
+        <span>🌿 Skincare · Andheri</span>
+        <span>🍱 Tiffin Service · Borivali</span>
+        <span>💍 Jewellery · Dadar</span>
+        <span>🕯️ Candles · Thane</span>
+        <span>🥗 Health Food · Powai</span>
+        <span>👗 Boutique · Vile Parle</span>
+        <span>🧴 Herbal Oils · Pune</span>
+        <span>🎂 Custom Cakes · Surat</span>
+        <span>🧵 Handmade · Jaipur</span>
+        <!-- duplicate for seamless loop -->
+        <span>🧁 Home Baker · Bandra</span>
+        <span>🌿 Skincare · Andheri</span>
+        <span>🍱 Tiffin Service · Borivali</span>
+        <span>💍 Jewellery · Dadar</span>
+        <span>🕯️ Candles · Thane</span>
+        <span>🥗 Health Food · Powai</span>
+        <span>👗 Boutique · Vile Parle</span>
+        <span>🧴 Herbal Oils · Pune</span>
+        <span>🎂 Custom Cakes · Surat</span>
+        <span>🧵 Handmade · Jaipur</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PAIN SECTION ─────────────────── -->
+  <div class="lp-pain">
+    <div class="lp-pain-inner">
+      <div class="lp-pain-label">Pehchana?</div>
+      <h2 class="lp-pain-title">
+        Instagram pe 5,000 followers hain.<br>
+        Phir bhi log poochte hain —<br>
+        <em>"Bhaiya, price kya hai?"</em>
+      </h2>
+      <p class="lp-pain-body">
+        DMs mein order lo. WhatsApp pe bhejo.
+        Manually track karo. Roz yahi kaam.
+        Nukkad is sab ko khatam karta hai.
+      </p>
+      <div class="lp-pain-vs">
+        <div class="lp-vs-col lp-vs-bad">
+          <div class="lp-vs-head">Abhi kya hota hai</div>
+          <div class="lp-vs-item">😓 "Price kya hai?" — 20 baar</div>
+          <div class="lp-vs-item">😓 WhatsApp pe manually order note karo</div>
+          <div class="lp-vs-item">😓 Photo baar baar bhejni padti hai</div>
+          <div class="lp-vs-item">😓 Koi record nahi, koi data nahi</div>
         </div>
-        <div class="hcard hcard-main">
-          <div class="hcard-cover" style="background:linear-gradient(135deg,#E8F0F4,#C8DCCC)">🌿</div>
-          <div class="hcard-body">
-            <div class="hcard-name">Priya's Skincare</div>
-            <div class="hcard-tag">💆 Hair & Skincare · Andheri</div>
-            <div class="hcard-products">
-              <div class="hcard-prod"><div class="hcard-prod-name">Hair Growth Oil</div><div class="hcard-prod-price">₹299</div></div>
-              <div class="hcard-prod"><div class="hcard-prod-name">Neem Face Wash</div><div class="hcard-prod-price">₹149</div></div>
-              <div class="hcard-prod"><div class="hcard-prod-name">Ubtan Powder</div><div class="hcard-prod-price">₹199</div></div>
-              <div class="hcard-prod"><div class="hcard-prod-name">Kumkumadi Oil</div><div class="hcard-prod-price">₹349</div></div>
+        <div class="lp-vs-col lp-vs-good">
+          <div class="lp-vs-head">Nukkad ke baad</div>
+          <div class="lp-vs-item">✓ Catalog hamesha live</div>
+          <div class="lp-vs-item">✓ Order seedha WhatsApp pe aata hai</div>
+          <div class="lp-vs-item">✓ Sab kuch ek link mein</div>
+          <div class="lp-vs-item">✓ Dashboard mein sab track hota hai</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── HOW IT WORKS ──────────────────── -->
+  <div class="lp-how">
+    <div class="lp-how-inner">
+      <div class="lp-section-label">
+        Kaise kaam karta hai
+      </div>
+      <h2 class="lp-section-title">
+        5 minutes mein <em>live</em>
+      </h2>
+      <div class="lp-steps">
+        <div class="lp-step">
+          <div class="lp-step-num">01</div>
+          <div class="lp-step-body">
+            <div class="lp-step-title">
+              Apna naam aur WhatsApp dalo
+            </div>
+            <div class="lp-step-desc">
+              Koi document nahi. Koi approval
+              nahi. Bas basic details.
             </div>
           </div>
         </div>
-        <div class="hcard hcard-right">
-          <div class="hcard-cover" style="background:linear-gradient(135deg,#F4EDE8,#E8D4C0)">🍱</div>
-          <div class="hcard-body"><div class="hcard-name">Sunita Tiffin</div><div class="hcard-tag">🍱 Home Food · Borivali</div></div>
+        <div class="lp-step-line"></div>
+        <div class="lp-step">
+          <div class="lp-step-num">02</div>
+          <div class="lp-step-body">
+            <div class="lp-step-title">
+              Products add karo
+            </div>
+            <div class="lp-step-desc">
+              Photo upload karo, price set karo.
+              Tumhara catalog ek minute mein
+              ready.
+            </div>
+          </div>
+        </div>
+        <div class="lp-step-line"></div>
+        <div class="lp-step">
+          <div class="lp-step-num">03</div>
+          <div class="lp-step-body">
+            <div class="lp-step-title">
+              Link share karo
+            </div>
+            <div class="lp-step-desc">
+              thenukkad.store/tumhara-naam —
+              Instagram bio mein, WhatsApp
+              status mein, visiting card pe.
+            </div>
+          </div>
+        </div>
+        <div class="lp-step-line"></div>
+        <div class="lp-step">
+          <div class="lp-step-num">04</div>
+          <div class="lp-step-body">
+            <div class="lp-step-title">
+              Orders WhatsApp pe aao
+            </div>
+            <div class="lp-step-desc">
+              Customer "Order" tap kare —
+              tumhare WhatsApp pe seedha
+              message aata hai. Bas confirm karo.
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="how-section">
-    <div class="section-header">
-      <div class="section-label">How it works</div>
-      <h2 class="section-title serif">Online in <em>5 minutes</em>, really</h2>
-    </div>
-    <div class="how-grid">
-      <div class="how-card"><div class="how-num">1</div><div class="how-icon">📝</div><div class="how-title">Tell us about you</div><div class="how-desc">Your name, your area, your WhatsApp. That's it. No documents, no approvals.</div></div>
-      <div class="how-card"><div class="how-num">2</div><div class="how-icon">📷</div><div class="how-title">Add your products</div><div class="how-desc">Upload a photo, set a price, add a description. Your catalog looks professional instantly.</div></div>
-      <div class="how-card"><div class="how-num">3</div><div class="how-icon">🔗</div><div class="how-title">Get your store link</div><div class="how-desc">thenukkad.store/storename — share it on WhatsApp groups, Instagram bio, anywhere.</div></div>
-      <div class="how-card"><div class="how-num">4</div><div class="how-icon">💬</div><div class="how-title">Orders on WhatsApp</div><div class="how-desc">Customer taps "Order" — you get a WhatsApp message with everything you need. Close the sale.</div></div>
+  <!-- ── FEATURES ──────────────────────── -->
+  <div class="lp-features">
+    <div class="lp-features-inner">
+      <div class="lp-section-label">
+        Kya milega tumhe
+      </div>
+      <h2 class="lp-section-title">
+        Ek professional store.<br>
+        <em>Bina website ke.</em>
+      </h2>
+      <div class="lp-feat-grid">
+        <div class="lp-feat">
+          <div class="lp-feat-icon">🏪</div>
+          <div class="lp-feat-title">
+            Apni identity online
+          </div>
+          <div class="lp-feat-desc">
+            thenukkad.store/tumhara-naam —
+            yeh link tumhara hai. Visiting card
+            pe lagao, packaging pe chipkao.
+          </div>
+        </div>
+        <div class="lp-feat">
+          <div class="lp-feat-icon">📷</div>
+          <div class="lp-feat-title">
+            Real product catalog
+          </div>
+          <div class="lp-feat-desc">
+            Photos, prices, descriptions — sab
+            ek jagah. "DM for price" ka zamana
+            gaya.
+          </div>
+        </div>
+        <div class="lp-feat">
+          <div class="lp-feat-icon">💬</div>
+          <div class="lp-feat-title">
+            WhatsApp-native orders
+          </div>
+          <div class="lp-feat-desc">
+            Hum WhatsApp se ladai nahi karte —
+            use aur better banate hain. Order
+            seedha inbox mein.
+          </div>
+        </div>
+        <div class="lp-feat">
+          <div class="lp-feat-icon">📊</div>
+          <div class="lp-feat-title">
+            Dashboard aur analytics
+          </div>
+          <div class="lp-feat-desc">
+            Pending orders, accepted orders,
+            top products — sab ek jagah.
+            Apna business samjho.
+          </div>
+        </div>
+        <div class="lp-feat">
+          <div class="lp-feat-icon">⬛</div>
+          <div class="lp-feat-title">
+            QR code free mein
+          </div>
+          <div class="lp-feat-desc">
+            Apna QR print karo. Packaging pe
+            lagao. Society group mein bhejo.
+            Scan karo aur shop karo.
+          </div>
+        </div>
+        <div class="lp-feat">
+          <div class="lp-feat-icon">🛒</div>
+          <div class="lp-feat-title">
+            Shopping cart
+          </div>
+          <div class="lp-feat-desc">
+            Customer multiple items ek saath
+            order kar sakta hai. Ek WhatsApp
+            message mein poora order.
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="features-section">
-    <div class="section-header">
-      <div class="section-label">Why Nukkad</div>
-      <h2 class="section-title serif">Built for the way <em>India actually sells</em></h2>
-    </div>
-    <div class="features-grid">
-      <div class="feat-card"><div class="feat-icon" style="background:#E8F0F8">🏪</div><div class="feat-title">Your identity online</div><div class="feat-desc">A real store page that's yours — thenukkad.store/storename. Share it on your visiting card, packaging, WhatsApp status.</div></div>
-      <div class="feat-card"><div class="feat-icon" style="background:#FDF4E4">📷</div><div class="feat-title">Real product catalog</div><div class="feat-desc">Upload actual photos with prices. No more "DM for price." Customers see everything before they contact you.</div></div>
-      <div class="feat-card"><div class="feat-icon" style="background:#E8F4EA">💬</div><div class="feat-title">WhatsApp-native orders</div><div class="feat-desc">We don't fight WhatsApp — we plug into it. Every order lands in your inbox with product details, ready to confirm.</div></div>
-      <div class="feat-card"><div class="feat-icon" style="background:#F4E8E8">📲</div><div class="feat-title">QR code for everywhere</div><div class="feat-desc">Auto-generated QR for your store. Stick it on your packaging, share it in society groups — they scan and shop.</div></div>
+  <!-- ── FINAL CTA ──────────────────────── -->
+  <div class="lp-final-cta">
+    <div class="lp-final-inner">
+      <div class="lp-final-logo">Nukkad ·</div>
+      <h2 class="lp-final-title">
+        Apni dukaan.<br>Apna nukkad.
+      </h2>
+      <p class="lp-final-sub">
+        Free mein shuru karo. Hamesha free.
+      </p>
+      <button class="lp-btn-main lp-btn-gold"
+              onclick="startCreate()">
+        Abhi shuru karo — free →
+      </button>
     </div>
   </div>
 
-  <!-- ════ INSTAGRAM PAIN POINT SECTION ════ -->
-  <div style="background:var(--ink);padding:4rem clamp(1rem,5%,3rem);text-align:center;">
-    <div style="max-width:700px;margin:0 auto;">
-      <div style="font-size:0.7rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold-light);margin-bottom:1rem;">Sound familiar?</div>
-      <h2 style="font-family:'Cormorant Garamond',serif;font-size:clamp(1.6rem,3.5vw,2.5rem);color:white;line-height:1.2;margin-bottom:1.2rem;font-weight:700;">You have a profile on Instagram.<br>But they still <em style="color:var(--earth-light);font-style:italic;">can't see what you sell.</em></h2>
-      <p style="font-size:0.92rem;color:rgba(255,255,255,0.6);line-height:1.7;margin-bottom:2rem;">No product catalog. No prices. No order button. Just DMs that get lost. Nukkad gives your followers a real place to shop — in 5 minutes.</p>
-      <button class="btn-primary" onclick="startCreate()" style="background:var(--gold);color:var(--ink);margin:0 auto;display:inline-flex;">Create Your Store Free →</button>
-    </div>
-  </div>
 </div>
 
 <!-- ════ MARKETPLACE ════ -->
