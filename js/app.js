@@ -168,8 +168,6 @@ let productImageFiles = {}; // { prodId: File }
 // ═══════════════════════════════════
 window.addEventListener('load', async () => {
   buildEmojiPicker();
-  await loadStores();
-  await initAuth();
 
   const params = new URLSearchParams(
     window.location.search);
@@ -177,10 +175,19 @@ window.addEventListener('load', async () => {
   const storeParam = params.get('store');
   const productParam = params.get('product');
 
-  if (customerParam) {
-    await loadCustomerProfile(customerParam);
+  if (storeParam && !params.get('page')) {
+    // Direct store link — fetch store WITHOUT
+    // waiting for auth or loadStores.
+    // iOS Safari/Chrome bug: getSession() returns
+    // null on first load. Public store data does
+    // NOT need auth — fetch immediately.
+    // Run auth and loadStores in background.
+    loadStores().catch(console.warn);
+    initAuth().catch(console.warn);
 
-  } else if (storeParam && !params.get('page')) {
+    // Small delay to let Supabase client init
+    await new Promise(r => setTimeout(r, 100));
+
     try {
       const { data: freshStore, error: linkErr } =
         await sb
@@ -190,8 +197,16 @@ window.addEventListener('load', async () => {
           .single();
 
       if (linkErr || !freshStore) {
-        showToast('Store not found');
-        showPg('home');
+        // Wait for loadStores to finish as fallback
+        await new Promise(r => setTimeout(r, 2000));
+        const s = allStores.find(
+          x => x.handle === storeParam);
+        if (s) {
+          await openStore(storeParam);
+        } else {
+          showToast('Store not found');
+          showPg('home');
+        }
       } else {
         freshStore.products =
           freshStore.products || [];
@@ -206,6 +221,8 @@ window.addEventListener('load', async () => {
       }
     } catch(e) {
       console.error('Store link error:', e);
+      // Last resort — wait and try cache
+      await new Promise(r => setTimeout(r, 2000));
       const s = allStores.find(
         x => x.handle === storeParam);
       if (s) {
@@ -216,19 +233,32 @@ window.addEventListener('load', async () => {
       }
     }
 
-  } else {
-    // Restore last page from localStorage
-    const lastRaw = localStorage.getItem('nukkad_last_page');
-    const last = lastRaw ? JSON.parse(lastRaw) : null;
+  } else if (customerParam) {
+    await loadStores();
+    await initAuth();
+    await loadCustomerProfile(customerParam);
 
-    if (last && last.page === 'store' && last.store) {
-      const s = allStores.find(x => x.handle === last.store);
+  } else {
+    await loadStores();
+    await initAuth();
+
+    const lastRaw = localStorage.getItem(
+      'nukkad_last_page');
+    const last = lastRaw
+      ? JSON.parse(lastRaw) : null;
+
+    if (last && last.page === 'store' &&
+        last.store) {
+      const s = allStores.find(
+        x => x.handle === last.store);
       if (s) {
         await openStore(last.store);
       } else {
-        showPg('market');
+        showPg('home');
       }
-    } else if (last && last.page && last.page !== 'create' && last.page !== 'market') {
+    } else if (last && last.page &&
+               last.page !== 'create' &&
+               last.page !== 'market') {
       showPg(last.page);
     } else {
       showPg('home');
