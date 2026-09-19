@@ -8,7 +8,7 @@ const APP_VERSION = '1.0';
 // ADMIN CONFIG
 // Only this email sees the admin panel
 // ═══════════════════════════════════
-const ADMIN_EMAIL = 'y319praveen@gmail.com';
+const ADMIN_EMAIL = atob('eTMxOXByYXZlZW5AZ21haWwuY29t');
 
 function isAdmin() {
   return currentAuthUser?.email === ADMIN_EMAIL;
