@@ -29,11 +29,14 @@ function adminIsOwner(handle) {
     localStorage.setItem('nukkad_app_version', APP_VERSION);
     localStorage.removeItem('nukkad_last_page');
     const url = new URL(window.location.href);
-    const hasStateParams = url.searchParams.has('page') ||
-                           url.searchParams.has('store') ||
-                           url.searchParams.has('product') ||
-                           url.searchParams.has('customer');
-    if (hasStateParams) {
+    // Only strip internal navigation params (page=)
+    // NEVER strip store/product/customer params —
+    // those are shared links from outside the app
+    const hasInternalParams =
+      url.searchParams.has('page');
+    if (hasInternalParams &&
+        !url.searchParams.has('store') &&
+        !url.searchParams.has('customer')) {
       window.history.replaceState({page:'home'}, '',
         window.location.pathname);
     }
