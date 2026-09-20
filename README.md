@@ -8,7 +8,7 @@ and local businesses.
 ## What is Nukkad?
 
 Nukkad gives any business a beautiful online store 
-profile — like an Instagram page but built for 
+profile — like an socia media page but built for 
 selling. No website needed. No developer needed. 
 Online in 5 minutes, free.
 The online store can be accessible only through 
