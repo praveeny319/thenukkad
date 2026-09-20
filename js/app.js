@@ -43,11 +43,38 @@ function adminIsOwner(handle) {
 // ═══════════════════════════════════
 // SUPABASE
 // ═══════════════════════════════════
+const SUPABASE_URL =
+  'https://pgrmaugomtcccplbphke.supabase.co';
+const SUPABASE_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBncm1hdWdvbXRjY2NwbGJwaGtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3NjgxODEsImV4cCI6MjA5MDM0NDE4MX0.nHyA2fFl2DtheJ1CpTaW2QIQPFNQZ1p9RcLuMyDZ43Y';
+
 const { createClient } = supabase;
 const sb = createClient(
-  'https://pgrmaugomtcccplbphke.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBncm1hdWdvbXRjY2NwbGJwaGtlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3NjgxODEsImV4cCI6MjA5MDM0NDE4MX0.nHyA2fFl2DtheJ1CpTaW2QIQPFNQZ1p9RcLuMyDZ43Y'
+  SUPABASE_URL,
+  SUPABASE_KEY
 );
+
+// ═══════════════════════════════════
+// PROXY FETCH — Safari ITP fix
+// Routes Supabase calls through
+// thenukkad.store/api/ (Cloudflare Worker)
+// so Safari sees it as first-party request
+// ═══════════════════════════════════
+async function proxyFetch(path, options = {}) {
+  const proxyBase = 'https://thenukkad.store/api';
+  const url = proxyBase + path;
+  const res = await fetch(url, {
+    method: options.method || 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
+    },
+    body: options.body || undefined
+  });
+  if (!res.ok) throw new Error(
+    'Proxy fetch failed: ' + res.status);
+  return res.json();
+}
 
 // ═══════════════════════════════════
 // CONSTANTS
@@ -189,47 +216,86 @@ window.addEventListener('load', async () => {
     await new Promise(r => setTimeout(r, 100));
 
     try {
-      const { data: freshStore, error: linkErr } =
-        await sb
-          .from('stores')
-          .select('*, products(*)')
-          .eq('handle', storeParam)
-          .single();
+      // Use Cloudflare Worker proxy — Safari fix
+      // Safari ITP blocks direct Supabase calls
+      // on first visit. Proxy routes through
+      // thenukkad.store which Safari trusts.
+      const stores = await proxyFetch(
+        '/rest/v1/stores?handle=eq.' +
+        encodeURIComponent(storeParam) +
+        '&select=*'
+      );
+      const proxyStore = Array.isArray(stores)
+        ? stores[0] : null;
 
-      if (linkErr || !freshStore) {
-        // Wait for loadStores to finish as fallback
+      if (!proxyStore) {
+        throw new Error('Store not found via proxy');
+      }
+
+      // Fetch products via proxy
+      const products = await proxyFetch(
+        '/rest/v1/products?store_handle=eq.' +
+        encodeURIComponent(storeParam) +
+        '&select=*&order=created_at.asc'
+      );
+      proxyStore.products = Array.isArray(products)
+        ? products : [];
+
+      const ei = allStores.findIndex(
+        s => s.handle === storeParam);
+      if (ei > -1) allStores[ei] = proxyStore;
+      else allStores.push(proxyStore);
+      await openStore(storeParam);
+      if (productParam) {
+        openProductDetail(storeParam, productParam);
+      }
+
+    } catch(e) {
+      console.error('Store link error (proxy):', e);
+      // Fallback to direct Supabase
+      try {
+        const { data: freshStore, error: linkErr } =
+          await sb
+            .from('stores')
+            .select('*, products(*)')
+            .eq('handle', storeParam)
+            .single();
+
+        if (linkErr || !freshStore) {
+          // Wait for loadStores to finish as fallback
+          await new Promise(r => setTimeout(r, 2000));
+          const s = allStores.find(
+            x => x.handle === storeParam);
+          if (s) {
+            await openStore(storeParam);
+          } else {
+            showToast('Store not found');
+            showPg('home');
+          }
+        } else {
+          freshStore.products =
+            freshStore.products || [];
+          const ei = allStores.findIndex(
+            s => s.handle === storeParam);
+          if (ei > -1) allStores[ei] = freshStore;
+          else allStores.push(freshStore);
+          await openStore(storeParam);
+          if (productParam) {
+            openProductDetail(storeParam, productParam);
+          }
+        }
+      } catch(e2) {
+        console.error('Store link error (fallback):', e2);
+        // Last resort — wait and try cache
         await new Promise(r => setTimeout(r, 2000));
         const s = allStores.find(
           x => x.handle === storeParam);
         if (s) {
           await openStore(storeParam);
         } else {
-          showToast('Store not found');
+          showToast('Could not load store');
           showPg('home');
         }
-      } else {
-        freshStore.products =
-          freshStore.products || [];
-        const ei = allStores.findIndex(
-          s => s.handle === storeParam);
-        if (ei > -1) allStores[ei] = freshStore;
-        else allStores.push(freshStore);
-        await openStore(storeParam);
-        if (productParam) {
-          openProductDetail(storeParam, productParam);
-        }
-      }
-    } catch(e) {
-      console.error('Store link error:', e);
-      // Last resort — wait and try cache
-      await new Promise(r => setTimeout(r, 2000));
-      const s = allStores.find(
-        x => x.handle === storeParam);
-      if (s) {
-        await openStore(storeParam);
-      } else {
-        showToast('Could not load store');
-        showPg('home');
       }
     }
 
