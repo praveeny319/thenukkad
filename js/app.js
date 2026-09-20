@@ -216,77 +216,86 @@ window.addEventListener('load', async () => {
     await new Promise(r => setTimeout(r, 100));
 
     try {
-      // Try Cloudflare proxy first (Safari fix)
-      // Falls back to direct Supabase if proxy fails
-      let freshStore = null;
-      let products = [];
+      // Use Cloudflare Worker proxy — Safari fix
+      // Safari ITP blocks direct Supabase calls
+      // on first visit. Proxy routes through
+      // thenukkad.store which Safari trusts.
+      const stores = await proxyFetch(
+        '/rest/v1/stores?handle=eq.' +
+        encodeURIComponent(storeParam) +
+        '&select=*'
+      );
+      const proxyStore = Array.isArray(stores)
+        ? stores[0] : null;
 
-      try {
-        const stores = await proxyFetch(
-          '/rest/v1/stores?handle=eq.' +
-          encodeURIComponent(storeParam) +
-          '&select=*'
-        );
-        freshStore = Array.isArray(stores)
-          ? stores[0] : null;
-
-        if (freshStore) {
-          const prods = await proxyFetch(
-            '/rest/v1/products?store_handle=eq.' +
-            encodeURIComponent(storeParam) +
-            '&select=*&order=created_at.asc'
-          );
-          products = Array.isArray(prods) ? prods : [];
-        }
-      } catch(proxyErr) {
-        console.warn('Proxy failed, using direct Supabase:', proxyErr);
-        // Direct Supabase fallback
-        const { data: storeData } = await sb
-          .from('stores')
-          .select('*, products(*)')
-          .eq('handle', storeParam)
-          .single();
-        if (storeData) {
-          freshStore = storeData;
-          products = storeData.products || [];
-        }
+      if (!proxyStore) {
+        throw new Error('Store not found via proxy');
       }
 
-      if (!freshStore) {
-        await loadStores();
-        await initAuth();
-        showToast('Store not found');
-        showPg('home');
-        return;
-      }
-
-      freshStore.products = products
-        .filter(p => !p.is_hidden);
+      // Fetch products via proxy
+      const products = await proxyFetch(
+        '/rest/v1/products?store_handle=eq.' +
+        encodeURIComponent(storeParam) +
+        '&select=*&order=created_at.asc'
+      );
+      proxyStore.products = Array.isArray(products)
+        ? products : [];
 
       const ei = allStores.findIndex(
         s => s.handle === storeParam);
-      if (ei > -1) allStores[ei] = freshStore;
-      else allStores.push(freshStore);
-
+      if (ei > -1) allStores[ei] = proxyStore;
+      else allStores.push(proxyStore);
       await openStore(storeParam);
       if (productParam) {
         openProductDetail(storeParam, productParam);
       }
 
-      loadStores().catch(console.warn);
-      initAuth().catch(console.warn);
-
     } catch(e) {
-      console.error('Store link error:', e);
-      await loadStores();
-      await initAuth();
-      const s = allStores.find(
-        x => x.handle === storeParam);
-      if (s) {
-        await openStore(storeParam);
-      } else {
-        showToast('Could not load store');
-        showPg('home');
+      console.error('Store link error (proxy):', e);
+      // Fallback to direct Supabase
+      try {
+        const { data: freshStore, error: linkErr } =
+          await sb
+            .from('stores')
+            .select('*, products(*)')
+            .eq('handle', storeParam)
+            .single();
+
+        if (linkErr || !freshStore) {
+          // Wait for loadStores to finish as fallback
+          await new Promise(r => setTimeout(r, 2000));
+          const s = allStores.find(
+            x => x.handle === storeParam);
+          if (s) {
+            await openStore(storeParam);
+          } else {
+            showToast('Store not found');
+            showPg('home');
+          }
+        } else {
+          freshStore.products =
+            freshStore.products || [];
+          const ei = allStores.findIndex(
+            s => s.handle === storeParam);
+          if (ei > -1) allStores[ei] = freshStore;
+          else allStores.push(freshStore);
+          await openStore(storeParam);
+          if (productParam) {
+            openProductDetail(storeParam, productParam);
+          }
+        }
+      } catch(e2) {
+        console.error('Store link error (fallback):', e2);
+        // Last resort — wait and try cache
+        await new Promise(r => setTimeout(r, 2000));
+        const s = allStores.find(
+          x => x.handle === storeParam);
+        if (s) {
+          await openStore(storeParam);
+        } else {
+          showToast('Could not load store');
+          showPg('home');
+        }
       }
     }
 
