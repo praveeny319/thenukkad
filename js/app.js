@@ -4158,24 +4158,21 @@ function closeAuthModal() {
 }
 
 function switchAuthTab(tab) {
-  ['auth-login-form', 'auth-signup-form', 'auth-forgot-form', 'auth-reset-form'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
+  ['login','signup','forgot','reset'].forEach(t => {
+    const el = document.getElementById('auth-' + t + '-form');
+    if (el) el.style.display = t === tab ? 'block' : 'none';
   });
-  const target = document.getElementById('auth-' + tab + '-form');
-  if (target) target.style.display = 'block';
-
   document.getElementById('auth-tab-login').classList.toggle('on', tab === 'login');
   document.getElementById('auth-tab-signup').classList.toggle('on', tab === 'signup');
 
-  // Reset forgot form state
+  // Reset forgot form state when switching to it
   if (tab === 'forgot') {
-    const successEl = document.getElementById('forgot-success');
-    const errEl = document.getElementById('forgot-err');
-    const emailEl = document.getElementById('forgot-email');
-    if (successEl) successEl.style.display = 'none';
-    if (errEl) { errEl.textContent = ''; errEl.classList.remove('show'); }
-    if (emailEl) emailEl.value = '';
+    const s = document.getElementById('forgot-success');
+    const e = document.getElementById('forgot-err');
+    const em = document.getElementById('forgot-email');
+    if (s) s.style.display = 'none';
+    if (e) e.textContent = '';
+    if (em) em.value = '';
   }
 }
 
