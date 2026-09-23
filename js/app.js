@@ -184,6 +184,14 @@ let productImageFiles = {}; // { prodId: File }
 window.addEventListener('load', async () => {
   buildEmojiPicker();
 
+  // Handle password reset redirect
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('reset') === 'true') {
+    window.history.replaceState({}, '', window.location.pathname + window.location.hash);
+    // Wait for Supabase session to load, then show reset form
+    setTimeout(() => { openAuthModal('reset'); }, 500);
+  }
+
   const params = new URLSearchParams(
     window.location.search);
   const customerParam = params.get('customer');
@@ -4123,7 +4131,10 @@ async function initAuth() {
   }
   // Listen for auth changes
   sb.auth.onAuthStateChange((event, session) => {
-    if (event === 'SIGNED_IN' && session?.user) {
+    if (event === 'PASSWORD_RECOVERY') {
+      // User clicked reset link in email
+      openAuthModal('reset');
+    } else if (event === 'SIGNED_IN' && session?.user) {
       currentAuthUser = session.user;
       onAuthSuccess(session.user, false);
     } else if (event === 'SIGNED_OUT') {
@@ -4147,10 +4158,25 @@ function closeAuthModal() {
 }
 
 function switchAuthTab(tab) {
-  document.getElementById('auth-login-form').style.display = tab === 'login' ? '' : 'none';
-  document.getElementById('auth-signup-form').style.display = tab === 'signup' ? '' : 'none';
+  ['auth-login-form', 'auth-signup-form', 'auth-forgot-form', 'auth-reset-form'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  const target = document.getElementById('auth-' + tab + '-form');
+  if (target) target.style.display = 'block';
+
   document.getElementById('auth-tab-login').classList.toggle('on', tab === 'login');
   document.getElementById('auth-tab-signup').classList.toggle('on', tab === 'signup');
+
+  // Reset forgot form state
+  if (tab === 'forgot') {
+    const successEl = document.getElementById('forgot-success');
+    const errEl = document.getElementById('forgot-err');
+    const emailEl = document.getElementById('forgot-email');
+    if (successEl) successEl.style.display = 'none';
+    if (errEl) { errEl.textContent = ''; errEl.classList.remove('show'); }
+    if (emailEl) emailEl.value = '';
+  }
 }
 
 async function doLogin() {
@@ -4203,6 +4229,61 @@ async function doSignup() {
     showToast('Account created! Welcome to Nukkad 🌿');
     onAuthSuccess(data.user, true);
   }
+}
+
+async function doForgotPassword() {
+  const email = document.getElementById('forgot-email').value.trim();
+  const errEl = document.getElementById('forgot-err');
+  const successEl = document.getElementById('forgot-success');
+  const btn = document.getElementById('forgot-btn');
+
+  errEl.textContent = '';
+  errEl.classList.remove('show');
+  successEl.style.display = 'none';
+
+  if (!email) { showAuthErr('forgot', 'Please enter your email'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: 'https://thenukkad.store/?reset=true'
+  });
+
+  btn.disabled = false;
+  btn.textContent = 'Send Reset Link';
+
+  if (error) { showAuthErr('forgot', error.message); return; }
+
+  successEl.style.display = 'block';
+  document.getElementById('forgot-email').value = '';
+}
+
+async function doResetPassword() {
+  const pass = document.getElementById('reset-pass').value;
+  const confirm = document.getElementById('reset-pass-confirm').value;
+  const errEl = document.getElementById('reset-err');
+  const btn = document.getElementById('reset-btn');
+
+  errEl.textContent = '';
+  errEl.classList.remove('show');
+
+  if (!pass || pass.length < 6) { showAuthErr('reset', 'Password must be at least 6 characters'); return; }
+  if (pass !== confirm) { showAuthErr('reset', 'Passwords do not match'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Updating...';
+
+  const { error } = await sb.auth.updateUser({ password: pass });
+
+  btn.disabled = false;
+  btn.textContent = 'Update Password';
+
+  if (error) { showAuthErr('reset', error.message); return; }
+
+  showToast('Password updated! Please log in. ✓');
+  closeAuthModal();
+  switchAuthTab('login');
 }
 
 function showAuthErr(form, msg) {

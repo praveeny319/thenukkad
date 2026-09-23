@@ -945,6 +945,9 @@
   <button type="button" onclick="togglePass('login-pass',this)" style="position:absolute;right:0.8rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--ink-light);">👁️</button>
 </div>
         </div>
+        <div style="text-align:right;margin-bottom:0.5rem;">
+          <span onclick="switchAuthTab('forgot')" style="font-size:0.78rem;color:var(--earth);cursor:pointer;font-weight:600;">Forgot password?</span>
+        </div>
         <div class="auth-err" id="login-err"></div>
         <button class="auth-btn" id="login-btn" onclick="doLogin()">Log In</button>
         <div class="auth-switch">Don't have an account? <span onclick="switchAuthTab('signup')">Sign up free</span></div>
@@ -984,6 +987,45 @@
         <div class="auth-err" id="signup-err"></div>
         <button class="auth-btn" id="signup-btn" onclick="doSignup()">Create Account</button>
         <div class="auth-switch">Already have an account? <span onclick="switchAuthTab('login')">Log in</span></div>
+      </div>
+
+      <!-- FORGOT PASSWORD FORM -->
+      <div id="auth-forgot-form" style="display:none;">
+        <div class="auth-title serif">Reset password 🔑</div>
+        <div class="auth-sub">Enter your email and we'll send you a reset link.</div>
+        <div class="auth-field">
+          <label class="auth-label">Email Address</label>
+          <input type="email" class="auth-input" id="forgot-email" placeholder="you@email.com" onkeydown="if(event.key==='Enter')doForgotPassword()">
+        </div>
+        <div class="auth-err" id="forgot-err"></div>
+        <div class="auth-success" id="forgot-success" style="display:none;background:#E8F5E9;border:1px solid #A5D6A7;border-radius:8px;padding:0.8rem 1rem;font-size:0.84rem;color:#2E7D32;margin-bottom:1rem;line-height:1.5;">
+          ✓ Reset link sent! Check your email from noreply@mail.app.supabase.io.<br>
+          <span style="font-size:0.76rem;color:#4CAF50;">Check spam folder if not received.</span>
+        </div>
+        <button class="auth-btn" id="forgot-btn" onclick="doForgotPassword()">Send Reset Link</button>
+        <div class="auth-switch">Remember your password? <span onclick="switchAuthTab('login')">Log in</span></div>
+      </div>
+
+      <!-- RESET PASSWORD FORM (shown when user clicks email link) -->
+      <div id="auth-reset-form" style="display:none;">
+        <div class="auth-title serif">New password 🔒</div>
+        <div class="auth-sub">Enter your new password below.</div>
+        <div class="auth-field">
+          <label class="auth-label">New Password</label>
+          <div style="position:relative;">
+            <input type="password" class="auth-input" id="reset-pass" placeholder="Min 6 characters" onkeydown="if(event.key==='Enter')doResetPassword()" style="padding-right:2.8rem;">
+            <button type="button" onclick="togglePass('reset-pass',this)" style="position:absolute;right:0.8rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--ink-light);">👁️</button>
+          </div>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Confirm Password</label>
+          <div style="position:relative;">
+            <input type="password" class="auth-input" id="reset-pass-confirm" placeholder="Repeat password" onkeydown="if(event.key==='Enter')doResetPassword()" style="padding-right:2.8rem;">
+            <button type="button" onclick="togglePass('reset-pass-confirm',this)" style="position:absolute;right:0.8rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--ink-light);">👁️</button>
+          </div>
+        </div>
+        <div class="auth-err" id="reset-err"></div>
+        <button class="auth-btn" id="reset-btn" onclick="doResetPassword()">Update Password</button>
       </div>
 
     </div>
