@@ -1176,14 +1176,18 @@
       <button type="button" class="pe-close" aria-label="Close" onclick="peRequestClose()">✕</button>
     </div>
 
-    <div class="pe-body" id="pe-body">
+    <div class="pe-scroll" id="pe-body">
       <div class="pe-label-row">
         <span class="pe-label">Photos</span>
         <span class="pe-count" id="pe-photo-count">0/6</span>
       </div>
-      <div class="pe-hint">The first photo is shown on your store. Tap ★ on another photo to make it the main one.</div>
+      <div class="pe-hint">Buyers can swipe through up to 8 photos. The first photo is the main one shown on your store — tap ★ on any photo to make it the main one.</div>
+      <div class="pe-photo-tools">
+        <button type="button" class="pe-tool" id="pe-add-btn" onclick="peEl('pe-file').click()">📷 Add photos</button>
+      </div>
       <div class="pe-photos" id="pe-photos"></div>
       <input type="file" id="pe-file" accept="image/*" multiple hidden onchange="pePhotosPicked(this)">
+      <input type="file" id="pe-replace-file" accept="image/*" hidden onchange="pePhotoReplaced(this)">
 
       <div class="pe-field" id="pe-f-name">
         <label class="pe-label" for="pe-name">Product name</label>

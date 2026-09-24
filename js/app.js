@@ -1213,7 +1213,7 @@ async function resetCoverPhotos() {
 //   ALTER TABLE products ADD COLUMN IF NOT EXISTS is_hidden BOOLEAN DEFAULT false;
 // ═══════════════════════════════════
 
-const PE_MAX_PHOTOS = 6;
+const PE_MAX_PHOTOS = 8;
 const PE_MAX_FILE_MB = 8;
 const PE_BUCKET = 'product-images';
 const PE_MAX_NAME = 80;
@@ -1229,6 +1229,7 @@ const PE = {
   photos: [],            // [{ key, url, file }]  file !== null → not uploaded yet
   orig: null,            // snapshot taken on open (for dirty check + cleanup)
   confirmingDelete: false,
+  replaceKey: null,      // key of the photo being swapped via Change
   lastFocus: null
 };
 let _peKey = 0;
@@ -1338,12 +1339,12 @@ function peRenderPhotos() {
     img.draggable = false;
     tile.appendChild(img);
 
-    const tag = document.createElement('span');
-    tag.className = 'pe-tag';
-    tag.textContent = i === 0 ? 'Main' : (ph.file ? 'New' : '');
-    if (tag.textContent) tile.appendChild(tag);
-
-    if (i > 0) {
+    if (i === 0) {
+      const tag = document.createElement('span');
+      tag.className = 'pe-tag';
+      tag.textContent = 'Main';
+      tile.appendChild(tag);
+    } else {
       const star = document.createElement('button');
       star.type = 'button';
       star.className = 'pe-tile-btn pe-star';
@@ -1363,6 +1364,14 @@ function peRenderPhotos() {
     del.addEventListener('click', () => peRemovePhoto(ph.key));
     tile.appendChild(del);
 
+    const chg = document.createElement('button');
+    chg.type = 'button';
+    chg.className = 'pe-tile-btn pe-chg';
+    chg.setAttribute('aria-label', 'Change photo ' + (i + 1));
+    chg.textContent = '📷 Change';
+    chg.addEventListener('click', () => peChangePhoto(ph.key));
+    tile.appendChild(chg);
+
     grid.appendChild(tile);
   });
 
@@ -1377,6 +1386,9 @@ function peRenderPhotos() {
   }
 
   peEl('pe-photo-count').textContent = PE.photos.length + '/' + PE_MAX_PHOTOS;
+  const addBtn = peEl('pe-add-btn');
+  const full = PE.photos.length >= PE_MAX_PHOTOS;
+  addBtn.textContent = full ? '📷 Photo limit reached (8)' : '📷 Add photos';
 }
 
 function peRenderVisibility() {
@@ -1501,6 +1513,11 @@ function pePhotosPicked(input) {
   input.value = '';                    // allow picking the same file again
   if (!files.length || PE.busy) return;
 
+  if (PE.photos.length >= PE_MAX_PHOTOS) {
+    peMsg(`You already have ${PE_MAX_PHOTOS} photos — remove one, or use Change on a photo.`, 'err');
+    return;
+  }
+
   const notes = [];
   let room = PE_MAX_PHOTOS - PE.photos.length;
   let over = 0;
@@ -1516,6 +1533,29 @@ function pePhotosPicked(input) {
 
   peRenderPhotos();
   peMsg(notes.join('. '), notes.length ? 'err' : '');
+}
+
+function peChangePhoto(key) {
+  if (PE.busy) return;
+  PE.replaceKey = key;
+  peEl('pe-replace-file').click();
+}
+
+function pePhotoReplaced(input) {
+  const f = input.files[0];
+  input.value = '';
+  const key = PE.replaceKey;
+  PE.replaceKey = null;
+  if (!f || PE.busy) return;
+  const ph = PE.photos.find(p => p.key === key);
+  if (!ph) return;
+  if (!f.type.startsWith('image/')) { peMsg(`“${f.name}” isn’t an image`, 'err'); return; }
+  if (f.size > PE_MAX_FILE_MB * 1024 * 1024) { peMsg(`“${f.name}” is over ${PE_MAX_FILE_MB}MB`, 'err'); return; }
+  if (ph.file && ph.url.startsWith('blob:')) URL.revokeObjectURL(ph.url);
+  ph.url = URL.createObjectURL(f);   // same slot, so its main/extra position is kept
+  ph.file = f;
+  peRenderPhotos();
+  peMsg('');
 }
 
 function peRemovePhoto(key) {
