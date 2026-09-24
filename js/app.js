@@ -1222,6 +1222,14 @@ function openEditProduct(e, handle, productId) {
   _editExtraFiles = [];
   renderExtraPhotosGrid(product.images || []);
 
+  // Reset state left over from any previous edit
+  const modalEl = document.getElementById('edit-prod-modal');
+  modalEl._pendingMainPhoto = null;
+  const mainInput = document.getElementById('ep-image-file');
+  if (mainInput) mainInput.value = '';
+  const saveBtn = document.getElementById('epm-save-btn');
+  if (saveBtn) { saveBtn.textContent = 'Save'; saveBtn.disabled = false; }
+
   // Set hide button label
   const hideBtn = document.getElementById('epm-hide-btn');
   if (hideBtn) {
@@ -1292,6 +1300,7 @@ function renderExtraPhotosGrid(images) {
 
 function removeExtraPhoto(idx) {
   _editExtraPhotos.splice(idx, 1);
+  _editExtraFiles.splice(idx, 1);
   renderExtraPhotosGrid(_editExtraPhotos);
 }
 
@@ -1455,6 +1464,7 @@ async function saveEditProduct() {
     modal2._pendingMainPhoto = null;
     const epImgInput = document.getElementById('ep-image-file');
     if (epImgInput) epImgInput.value = '';
+    btn.textContent = 'Save'; btn.disabled = false;
 
     closeEditProduct();
     openStore(handle);
