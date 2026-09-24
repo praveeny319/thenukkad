@@ -786,7 +786,7 @@ async function openStore(handle) {
         <div class="sv-prod-footer">
           <span class="sv-prod-price">₹${p.price}</span>
           ${finalOwner
-            ? `<button class="sv-edit-btn" onclick="openEditProduct(event,'${handle}','${pId}')">✏️ Edit</button>`
+            ? `<button class="sv-edit-btn" onclick="openProductEditor(event,'${handle}','${pId}')">✏️ Edit</button>`
             : `<div style="display:flex;gap:0.35rem;"><button class="sv-wa-btn" onclick="orderWA(event,'${safeName}','${p.price}')">Order</button><button class="sv-cart-btn" id="cart-btn-${pId}" data-product-name="${safeName}" onclick="addToCart(event,${JSON.stringify(p).replace(/"/g,'&quot;')},'${handle}')">+ Cart</button></div>`
           }
         </div>
@@ -1192,412 +1192,544 @@ async function resetCoverPhotos() {
 }
 
 // ═══════════════════════════════════
-// OWNER PRODUCT EDIT
+// PRODUCT EDITOR (owner)
+//
+// Single modal (#pe-overlay) to edit, hide/show and delete one product.
+//
+// Rules this module follows:
+//  • Every write is verified: Supabase returns NO error when Row Level
+//    Security blocks an update/delete — it just changes 0 rows — so we
+//    always `.select()` the result and treat an empty result as failure.
+//  • Messages are shown INSIDE the modal (the global toast sits behind it).
+//  • One `busy` lock: no double-submits, no closing mid-save.
+//  • Photos are one ordered list; index 0 is the main photo (image_url),
+//    the rest go to images[]. New files upload only on Save.
+//  • All user data goes through textContent / DOM APIs — never innerHTML.
+//
+// Supabase setup (SQL editor) if saves say "permissions" / "column":
+//   create policy "products update" on products for update using (true) with check (true);
+//   create policy "products delete" on products for delete using (true);
+//   ALTER TABLE products ADD COLUMN IF NOT EXISTS images JSONB DEFAULT '[]';
+//   ALTER TABLE products ADD COLUMN IF NOT EXISTS is_hidden BOOLEAN DEFAULT false;
 // ═══════════════════════════════════
 
-/*
-  Supabase RLS — run in SQL editor if edit / hide / delete
-  say "blocked by database permissions":
+const PE_MAX_PHOTOS = 6;
+const PE_MAX_FILE_MB = 8;
+const PE_BUCKET = 'product-images';
+const PE_MAX_NAME = 80;
+const PE_MAX_DESC = 500;
+const PE_MAX_PRICE = 9999999;
 
-  create policy "products update" on products for update using (true) with check (true);
-  create policy "products delete" on products for delete using (true);
-  ALTER TABLE products ADD COLUMN IF NOT EXISTS images JSONB DEFAULT '[]';
-  ALTER TABLE products ADD COLUMN IF NOT EXISTS is_hidden BOOLEAN DEFAULT false;
-*/
+const PE = {
+  open: false,
+  busy: false,
+  handle: null,
+  id: null,
+  hidden: false,
+  photos: [],            // [{ key, url, file }]  file !== null → not uploaded yet
+  orig: null,            // snapshot taken on open (for dirty check + cleanup)
+  confirmingDelete: false,
+  lastFocus: null
+};
+let _peKey = 0;
 
-// Supabase returns no error when RLS blocks an update/delete —
-// it just affects 0 rows. Treat that as a failure.
-// Returns a user-facing message, or null if the write worked.
-function productWriteProblem(error, rows, action) {
-  if (error) {
-    console.error(action + ' error:', error);
-    return action + ' failed: ' + error.message;
-  }
-  if (!rows || rows.length === 0) {
-    console.error(action + ': 0 rows affected (blocked by RLS or product not found)');
-    return action + ' blocked by database permissions — see console';
-  }
-  return null;
-}
+const peEl = id => document.getElementById(id);
 
-function openEditProduct(e, handle, productId) {
-  e.stopPropagation();
+// ── helpers ─────────────────────────────────────────
+
+function peFindProduct(handle, id) {
   const store = allStores.find(s => s.handle === handle);
-  if (!store) return;
-  const product = (store.products || []).find(p => String(p.id) === String(productId));
-  if (!product) return;
-  document.getElementById('epm-prod-id').value = productId;
-  document.getElementById('epm-handle').value = handle;
-  document.getElementById('epm-name').value = product.name || '';
-  document.getElementById('epm-price').value = product.price || '';
-  document.getElementById('epm-desc').value = product.description || '';
-
-  const curImgEl = document.getElementById('ep-current-img');
-  curImgEl.innerHTML = product.image_url
-    ? `<img src="${product.image_url}"
-            style="width:100%;max-height:140px;
-                   object-fit:cover;">`
-    : '';
-  _editExtraFiles = [];
-  renderExtraPhotosGrid(product.images || []);
-
-  // Reset state left over from any previous edit
-  const modalEl = document.getElementById('edit-prod-modal');
-  modalEl._pendingMainPhoto = null;
-  const mainInput = document.getElementById('ep-image-file');
-  if (mainInput) mainInput.value = '';
-  const saveBtn = document.getElementById('epm-save-btn');
-  if (saveBtn) { saveBtn.textContent = 'Save'; saveBtn.disabled = false; }
-
-  // Set hide button label
-  const hideBtn = document.getElementById('epm-hide-btn');
-  if (hideBtn) {
-    const isHidden = product.is_hidden === true;
-    hideBtn.textContent = isHidden
-      ? '👁 Show product'
-      : '👁 Hide product';
-    hideBtn.style.borderColor = isHidden
-      ? 'var(--leaf)' : 'var(--border)';
-    hideBtn.style.color = isHidden
-      ? 'var(--leaf)' : 'var(--ink-mid)';
-  }
-
-  document.getElementById('edit-prod-modal').classList.add('open');
+  const product = store
+    ? (store.products || []).find(p => p.id != null && String(p.id) === String(id))
+    : null;
+  return { store, product };
 }
 
-let _editExtraPhotos = [];   // saved URLs
-let _editExtraFiles  = [];   // pending File objects
-let _editExtraSlot   = -1;
-
-function renderExtraPhotosGrid(images) {
-  _editExtraPhotos = [...(images || [])];
-  const grid = document.getElementById(
-    'ep-extra-photos');
-  if (!grid) return;
-  const maxExtra = 5;
-  grid.innerHTML = '';
-
-  for (let i = 0; i < maxExtra; i++) {
-    const slot = document.createElement('div');
-    slot.style.cssText = `
-      aspect-ratio:1;border-radius:8px;
-      overflow:hidden;position:relative;
-      background:var(--paper-deep);
-      border:1.5px dashed var(--border);
-      cursor:pointer;display:flex;
-      align-items:center;justify-content:center;
-      font-size:1.2rem;color:var(--ink-faint);
-    `;
-    const url = _editExtraPhotos[i];
-    if (url) {
-      slot.innerHTML = `
-        <img src="${url}"
-             style="width:100%;height:100%;
-                    object-fit:cover;">
-        <button onclick="removeExtraPhoto(${i})"
-                style="position:absolute;top:2px;
-                       right:2px;background:rgba(
-                       220,50,50,0.85);color:white;
-                       border:none;border-radius:50%;
-                       width:18px;height:18px;
-                       font-size:0.6rem;cursor:pointer;
-                       display:flex;align-items:center;
-                       justify-content:center;
-                       font-weight:700;">✕</button>
-      `;
-    } else {
-      slot.textContent = '+';
-      slot.onclick = () => {
-        _editExtraSlot = i;
-        document.getElementById('ep-extra-file')
-          .click();
-      };
-    }
-    grid.appendChild(slot);
-  }
+function peRefreshStore(handle) {
+  // Re-render the store page, keeping the owner's scroll position
+  const y = window.scrollY;
+  Promise.resolve(openStore(handle))
+    .catch(err => console.warn('Store refresh failed:', err))
+    .finally(() => window.scrollTo(0, y));
 }
 
-function removeExtraPhoto(idx) {
-  _editExtraPhotos.splice(idx, 1);
-  _editExtraFiles.splice(idx, 1);
-  renderExtraPhotosGrid(_editExtraPhotos);
+function peMsg(text, kind) {
+  const el = peEl('pe-msg');
+  el.textContent = text || '';
+  el.className = 'pe-msg' + (text ? ' show ' + (kind || 'err') : '');
 }
 
-function handleExtraPhotoUpload(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  event.target.value = '';
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    if (_editExtraSlot >= 0 &&
-        _editExtraSlot < 5) {
-      _editExtraFiles[_editExtraSlot] = file;
-      _editExtraPhotos[_editExtraSlot] =
-        e.target.result;
-    } else {
-      _editExtraFiles.push(file);
-      _editExtraPhotos.push(e.target.result);
-    }
-    renderExtraPhotosGrid(_editExtraPhotos);
+function peReadForm() {
+  return {
+    name: peEl('pe-name').value.trim(),
+    price: peEl('pe-price').value.trim().replace(/,/g, ''),
+    desc: peEl('pe-desc').value.trim()
   };
-  reader.readAsDataURL(file);
 }
 
-function closeEditProduct() {
-  document.getElementById('edit-prod-modal').classList.remove('open');
+function peValidate(f) {
+  const errs = {};
+  if (!f.name) errs.name = 'Enter a product name';
+  else if (f.name.length > PE_MAX_NAME) errs.name = `Keep the name under ${PE_MAX_NAME} characters`;
+
+  if (!f.price) errs.price = 'Enter a price';
+  else if (!/^\d+(\.\d{1,2})?$/.test(f.price)) errs.price = 'Enter a valid price, e.g. 250 or 249.50';
+  else if (Number(f.price) > PE_MAX_PRICE) errs.price = 'That price is too high';
+
+  if (f.desc.length > PE_MAX_DESC) errs.desc = `Keep the description under ${PE_MAX_DESC} characters`;
+  return errs;
 }
 
-async function saveEditProduct() {
-  const productId = document.getElementById('epm-prod-id').value;
-  const handle = document.getElementById('epm-handle').value;
-  const name = document.getElementById('epm-name').value.trim();
-  const price = document.getElementById('epm-price').value.trim();
-  const desc = document.getElementById('epm-desc').value.trim();
+function peShowFieldErrors(errs) {
+  let first = null;
+  ['name', 'price', 'desc'].forEach(k => {
+    const wrap = peEl('pe-f-' + k);
+    const msg = peEl('pe-e-' + k);
+    const has = !!errs[k];
+    wrap.classList.toggle('err', has);
+    msg.textContent = errs[k] || '';
+    if (has && !first) first = k;
+  });
+  if (first) peEl('pe-' + first).focus();
+  return !!first;
+}
 
-  if (!name || !price) {
-    showToast('Name and price are required');
+function peClearFieldError(k) {
+  peEl('pe-f-' + k).classList.remove('err');
+  peEl('pe-e-' + k).textContent = '';
+}
+
+function peSig() {
+  return PE.photos.map(p => (p.file ? 'new:' + p.key : p.url)).join('|');
+}
+
+function peIsDirty() {
+  if (!PE.orig) return false;
+  const f = peReadForm();
+  return f.name !== PE.orig.name ||
+         f.price !== PE.orig.price ||
+         f.desc !== PE.orig.desc ||
+         peSig() !== PE.orig.sig;
+}
+
+function peSetBusy(on, label) {
+  PE.busy = on;
+  const overlay = peEl('pe-overlay');
+  overlay.classList.toggle('busy', on);
+  overlay.querySelectorAll('input, textarea, button').forEach(el => {
+    el.disabled = on;
+  });
+  peEl('pe-save').textContent = on && label ? label : 'Save changes';
+}
+
+// ── rendering ───────────────────────────────────────
+
+function peRenderPhotos() {
+  const grid = peEl('pe-photos');
+  grid.textContent = '';
+
+  PE.photos.forEach((ph, i) => {
+    const tile = document.createElement('div');
+    tile.className = 'pe-tile' + (i === 0 ? ' main' : '') + (ph.file ? ' fresh' : '');
+
+    const img = document.createElement('img');
+    img.src = ph.url;
+    img.alt = 'Product photo ' + (i + 1);
+    img.draggable = false;
+    tile.appendChild(img);
+
+    const tag = document.createElement('span');
+    tag.className = 'pe-tag';
+    tag.textContent = i === 0 ? 'Main' : (ph.file ? 'New' : '');
+    if (tag.textContent) tile.appendChild(tag);
+
+    if (i > 0) {
+      const star = document.createElement('button');
+      star.type = 'button';
+      star.className = 'pe-tile-btn pe-star';
+      star.title = 'Make this the main photo';
+      star.setAttribute('aria-label', 'Make photo ' + (i + 1) + ' the main photo');
+      star.textContent = '★';
+      star.addEventListener('click', () => peMakeMain(ph.key));
+      tile.appendChild(star);
+    }
+
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'pe-tile-btn pe-rm';
+    del.title = 'Remove photo';
+    del.setAttribute('aria-label', 'Remove photo ' + (i + 1));
+    del.textContent = '✕';
+    del.addEventListener('click', () => peRemovePhoto(ph.key));
+    tile.appendChild(del);
+
+    grid.appendChild(tile);
+  });
+
+  if (PE.photos.length < PE_MAX_PHOTOS) {
+    const add = document.createElement('button');
+    add.type = 'button';
+    add.className = 'pe-add';
+    add.setAttribute('aria-label', 'Add photos');
+    add.innerHTML = '<span>＋</span><small>Add</small>';
+    add.addEventListener('click', () => peEl('pe-file').click());
+    grid.appendChild(add);
+  }
+
+  peEl('pe-photo-count').textContent = PE.photos.length + '/' + PE_MAX_PHOTOS;
+}
+
+function peRenderVisibility() {
+  const pill = peEl('pe-pill');
+  pill.textContent = PE.hidden ? 'Hidden from buyers' : 'Visible to buyers';
+  pill.className = 'pe-pill ' + (PE.hidden ? 'hidden' : 'visible');
+  peEl('pe-hide-btn').textContent = PE.hidden ? '👁 Show product' : '🙈 Hide product';
+}
+
+function peRenderDelete() {
+  peEl('pe-danger').style.display = PE.confirmingDelete ? 'none' : 'flex';
+  peEl('pe-confirm').style.display = PE.confirmingDelete ? 'block' : 'none';
+  if (PE.confirmingDelete) {
+    const name = (peEl('pe-name').value.trim() || PE.orig?.name || 'this product');
+    peEl('pe-confirm-text').textContent = `Delete “${name}” permanently? This can’t be undone.`;
+  }
+}
+
+function peRenderDescCount() {
+  const n = peEl('pe-desc').value.length;
+  const el = peEl('pe-desc-count');
+  el.textContent = n + '/' + PE_MAX_DESC;
+  el.classList.toggle('over', n > PE_MAX_DESC);
+}
+
+// ── open / close ────────────────────────────────────
+
+function openProductEditor(e, handle, productId) {
+  if (e) { e.stopPropagation(); e.preventDefault(); }
+  if (PE.open) return;
+
+  const { store, product } = peFindProduct(handle, productId);
+  if (!store || !product) {
+    showToast(String(productId).startsWith('seed_')
+      ? 'Sample products can’t be edited'
+      : 'Product not found — refresh the page and try again');
     return;
   }
 
-  const btn = document.getElementById('epm-save-btn');
-  btn.textContent = 'Saving…'; btn.disabled = true;
+  const urls = [];
+  [product.image_url, ...(Array.isArray(product.images) ? product.images : [])].forEach(u => {
+    if (typeof u === 'string' && u && !urls.includes(u)) urls.push(u);
+  });
+
+  PE.open = true;
+  PE.busy = false;
+  PE.handle = handle;
+  PE.id = String(product.id);
+  PE.hidden = product.is_hidden === true;
+  PE.confirmingDelete = false;
+  PE.lastFocus = document.activeElement;
+  PE.photos = urls.map(u => ({ key: ++_peKey, url: u, file: null }));
+  PE.orig = {
+    name: String(product.name ?? '').trim(),
+    price: String(product.price ?? '').trim(),
+    desc: String(product.description ?? '').trim(),
+    urls: urls.slice(),
+    sig: urls.join('|')
+  };
+
+  peEl('pe-name').value = PE.orig.name;
+  peEl('pe-price').value = PE.orig.price;
+  peEl('pe-desc').value = PE.orig.desc;
+  peShowFieldErrors({});
+  peMsg('');
+  peSetBusy(false);
+  peRenderPhotos();
+  peRenderVisibility();
+  peRenderDelete();
+  peRenderDescCount();
+
+  peEl('pe-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  peEl('pe-body').scrollTop = 0;
+  setTimeout(() => { if (PE.open) peEl('pe-name').focus(); }, 50);
+}
+
+function peClose() {
+  PE.photos.forEach(p => { if (p.file && p.url.startsWith('blob:')) URL.revokeObjectURL(p.url); });
+  PE.open = false;
+  peSetBusy(false);
+  PE.photos = [];
+  PE.orig = null;
+  PE.confirmingDelete = false;
+  peEl('pe-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+  const back = PE.lastFocus;
+  PE.lastFocus = null;
+  if (back && typeof back.focus === 'function' && document.contains(back)) back.focus();
+}
+
+// Backdrop / ✕ / Cancel / Esc all come through here
+function peRequestClose() {
+  if (!PE.open || PE.busy) return;
+  if (PE.confirmingDelete) {          // first back out of the delete prompt
+    PE.confirmingDelete = false;
+    peRenderDelete();
+    return;
+  }
+  if (peIsDirty() && !confirm('Discard your unsaved changes?')) return;
+  peClose();
+}
+
+document.addEventListener('keydown', e => {
+  if (!PE.open) return;
+  if (e.key === 'Escape') { e.preventDefault(); peRequestClose(); return; }
+  if (e.key === 'Tab') {              // keep focus inside the dialog
+    const focusable = [...peEl('pe-overlay').querySelectorAll(
+      'button, input, textarea, [tabindex]:not([tabindex="-1"])')]
+      .filter(el => !el.disabled && el.offsetParent !== null && el.type !== 'file');
+    if (!focusable.length) return;
+    const first = focusable[0], last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+});
+
+// ── photos ──────────────────────────────────────────
+
+function pePhotosPicked(input) {
+  const files = [...input.files];
+  input.value = '';                    // allow picking the same file again
+  if (!files.length || PE.busy) return;
+
+  const notes = [];
+  let room = PE_MAX_PHOTOS - PE.photos.length;
+  let over = 0;
+
+  files.forEach(f => {
+    if (!f.type.startsWith('image/')) { notes.push(`“${f.name}” isn’t an image`); return; }
+    if (f.size > PE_MAX_FILE_MB * 1024 * 1024) { notes.push(`“${f.name}” is over ${PE_MAX_FILE_MB}MB`); return; }
+    if (room <= 0) { over++; return; }
+    PE.photos.push({ key: ++_peKey, url: URL.createObjectURL(f), file: f });
+    room--;
+  });
+  if (over) notes.push(`Only ${PE_MAX_PHOTOS} photos allowed — ${over} not added`);
+
+  peRenderPhotos();
+  peMsg(notes.join('. '), notes.length ? 'err' : '');
+}
+
+function peRemovePhoto(key) {
+  if (PE.busy) return;
+  const i = PE.photos.findIndex(p => p.key === key);
+  if (i < 0) return;
+  const [ph] = PE.photos.splice(i, 1);
+  if (ph.file && ph.url.startsWith('blob:')) URL.revokeObjectURL(ph.url);
+  peRenderPhotos();
+}
+
+function peMakeMain(key) {
+  if (PE.busy) return;
+  const i = PE.photos.findIndex(p => p.key === key);
+  if (i <= 0) return;
+  const [ph] = PE.photos.splice(i, 1);
+  PE.photos.unshift(ph);
+  peRenderPhotos();
+}
+
+async function peUploadPhoto(ph, n) {
+  let file = ph.file;
+  try {
+    file = await processProductImage(file, 800, 0.85);
+  } catch (err) {
+    console.warn('Image processing failed, uploading original:', err);
+  }
+  const ext = ((file.type.split('/')[1] || 'png').replace('jpeg', 'jpg')
+    .replace(/[^a-z0-9]/gi, '')) || 'png';
+  const path = `${PE.handle}/${PE.id}_${Date.now()}_${n}.${ext}`;
+  const { error } = await sb.storage.from(PE_BUCKET)
+    .upload(path, file, { contentType: file.type || 'image/png', upsert: false });
+  if (error) throw error;
+  return sb.storage.from(PE_BUCKET).getPublicUrl(path).data.publicUrl;
+}
+
+// Best-effort removal of photos no longer used. Never blocks or fails a save.
+async function peCleanupStorage(urls) {
+  const marker = '/storage/v1/object/public/' + PE_BUCKET + '/';
+  const paths = urls
+    .map(u => { const i = String(u).indexOf(marker); return i < 0 ? null : decodeURIComponent(String(u).slice(i + marker.length).split('?')[0]); })
+    .filter(Boolean);
+  if (!paths.length) return;
+  try { await sb.storage.from(PE_BUCKET).remove(paths); }
+  catch (err) { console.warn('Storage cleanup skipped:', err); }
+}
+
+// ── database errors → plain language ────────────────
+
+const PE_SQL_HINT = 'Run the products policy SQL from the setup notes in app.js.';
+
+function peDbError(error, what) {
+  console.error('Product ' + what + ' error:', error);
+  const m = String(error?.message || error || '');
+  if (/column .*(images|is_hidden)|(images|is_hidden).* column/i.test(m)) {
+    return new Error(`Your database is missing a column (${m}). ${PE_SQL_HINT}`);
+  }
+  if (/row-level security|permission denied|not authorized|JWT/i.test(m)) {
+    return new Error('The database refused this change (permissions). ' + PE_SQL_HINT);
+  }
+  if (/Failed to fetch|NetworkError|network/i.test(m)) {
+    return new Error('No connection — check your internet and try again.');
+  }
+  return new Error(`Could not ${what}: ${m}`);
+}
+
+function peBlockedError(what) {
+  console.error(`Product ${what}: 0 rows affected — blocked by RLS, or the product no longer exists.`);
+  return new Error(`The database didn’t apply the ${what}. It was blocked by permissions or the product was already removed. ${PE_SQL_HINT}`);
+}
+
+// ── save ────────────────────────────────────────────
+
+async function peSave() {
+  if (PE.busy || !PE.open) return;
+  peMsg('');
+
+  const f = peReadForm();
+  if (peShowFieldErrors(peValidate(f))) return;
+
+  if (!peIsDirty()) {
+    peClose();
+    showToast('No changes to save');
+    return;
+  }
+
+  const handle = PE.handle;
+  const origUrls = PE.orig.urls.slice();
 
   try {
-    let image_url = null;
-
-    // Check if a new (cropped) image was selected
-    const modal2 = document.getElementById('edit-prod-modal');
-    const imageFile = modal2._pendingMainPhoto || null;
-
-    if (imageFile) {
-      // Validate file
-      if (!imageFile.type.startsWith('image/')) {
-        showToast('Please select an image file');
-        btn.textContent = 'Save'; btn.disabled = false;
-        return;
-      }
-      if (imageFile.size > 5 * 1024 * 1024) {
-        showToast('Image must be under 5MB');
-        btn.textContent = 'Save'; btn.disabled = false;
-        return;
-      }
-
-      showToast('Processing image…');
-      let fileToUpload = imageFile;
-      try {
-        fileToUpload = await processProductImage(imageFile, 800, 0.85);
-      } catch (err) {
-        console.warn('Image processing failed, using original:', err);
-        // Use original if processing fails
-      }
-
-      showToast('Uploading image…');
-
-      const fileName = `products/${handle}_${productId}_${Date.now()}.jpg`;
-
-      const { error: upErr } = await sb.storage
-        .from('product-images')
-        .upload(fileName, fileToUpload, { upsert: true });
-
-      if (upErr) {
-        console.error('Image upload error:', upErr);
-        showToast('Image upload failed: ' + upErr.message);
-        btn.textContent = 'Save'; btn.disabled = false;
-        return;
-      }
-
-      const { data: urlData } = sb.storage
-        .from('product-images')
-        .getPublicUrl(fileName);
-
-      image_url = urlData.publicUrl;
+    // 1) upload photos that are still local files
+    const pending = PE.photos.filter(p => p.file);
+    for (let i = 0; i < pending.length; i++) {
+      peSetBusy(true, `Uploading photo ${i + 1}/${pending.length}…`);
+      const url = await peUploadPhoto(pending[i], i + 1).catch(err => {
+        throw new Error('Photo upload failed: ' + (err?.message || err) + '. Nothing was saved.');
+      });
+      // remember it: a retry after a later failure must not upload it again
+      if (pending[i].url.startsWith('blob:')) URL.revokeObjectURL(pending[i].url);
+      pending[i].url = url;
+      pending[i].file = null;
     }
+    if (pending.length) peRenderPhotos();
 
-    // Upload any pending extra photo files now
-    const finalExtraUrls = [];
-    for (let i = 0; i < _editExtraPhotos.length; i++) {
-      const url = _editExtraPhotos[i];
-      const file = _editExtraFiles[i];
+    // 2) write the row
+    peSetBusy(true, 'Saving…');
+    const finalUrls = PE.photos.map(p => p.url);
+    const { data, error } = await sb.from('products')
+      .update({
+        name: f.name,
+        price: f.price,
+        description: f.desc,
+        image_url: finalUrls[0] || null,
+        images: finalUrls.slice(1)
+      })
+      .eq('id', PE.id)
+      .select('*');
+    if (error) throw peDbError(error, 'save');
+    if (!data || !data.length) throw peBlockedError('save');
 
-      if (file) {
-        // This is a new local file — upload now
-        try {
-          showToast(`Uploading photo ${i+1}…`);
-          const processed = await processProductImage(
-            file, 800, 0.85);
-          const fileName =
-            `products/${handle}_extra_` +
-            `${productId}_${i}_${Date.now()}.jpg`;
-          const { error: upErr } = await sb.storage
-            .from('product-images')
-            .upload(fileName, processed,
-              { upsert: true });
-          if (upErr) throw upErr;
-          const { data: urlData } = sb.storage
-            .from('product-images')
-            .getPublicUrl(fileName);
-          finalExtraUrls.push(urlData.publicUrl);
-        } catch(err) {
-          console.error('Extra photo upload err:', err);
-          // Skip failed photo, continue saving
-        }
-      } else if (url && !url.startsWith('data:')) {
-        // Already saved Supabase URL — keep it
-        finalExtraUrls.push(url);
-      }
-      // Skip data: URLs without a file (shouldn't happen)
-    }
+    // 3) sync local cache from what the database actually stored
+    const { product } = peFindProduct(handle, PE.id);
+    if (product) Object.assign(product, data[0]);
 
-    // Build update object
-    const updates = {
-      name, price, description: desc,
-      images: finalExtraUrls
-    };
-    if (image_url) updates.image_url = image_url;
+    peCleanupStorage(origUrls.filter(u => !finalUrls.includes(u)));
 
-    // Save to Supabase
-    const { data: savedRows, error } = await sb
-      .from('products')
-      .update(updates)
-      .eq('id', productId)
-      .select('id');
-
-    const problem = productWriteProblem(error, savedRows, 'Save');
-    if (problem) {
-      showToast(problem);
-      btn.textContent = 'Save'; btn.disabled = false;
-      return;
-    }
-
-    // Update local allStores cache
-    const store = allStores.find(s => s.handle === handle);
-    if (store) {
-      const prod = (store.products || []).find(p => String(p.id) === String(productId));
-      if (prod) {
-        prod.name = name; prod.price = price; prod.description = desc;
-        prod.images = _editExtraPhotos.filter(Boolean);
-        if (image_url) prod.image_url = image_url;
-      }
-    }
-
-    // Reset pending photo + file input
-    modal2._pendingMainPhoto = null;
-    const epImgInput = document.getElementById('ep-image-file');
-    if (epImgInput) epImgInput.value = '';
-    btn.textContent = 'Save'; btn.disabled = false;
-
-    closeEditProduct();
-    openStore(handle);
-    showToast('Product updated! ✓');
-
+    peClose();
+    showToast('Product updated ✓');
+    peRefreshStore(handle);
   } catch (err) {
-    console.error('saveEditProduct error:', err);
-    showToast('Something went wrong — try again');
-    btn.textContent = 'Save'; btn.disabled = false;
+    peSetBusy(false);
+    peMsg(err.message || 'Something went wrong — please try again.', 'err');
   }
 }
 
-async function toggleHideProduct() {
-  const productId = document.getElementById('epm-prod-id').value;
-  const handle = document.getElementById('epm-handle').value;
-  if (!productId || !handle) return;
+// ── hide / show ─────────────────────────────────────
 
-  const store = allStores.find(s => s.handle === handle);
-  const product = (store?.products || [])
-    .find(p => String(p.id) === String(productId));
-  if (!product) return;
+async function peToggleHidden() {
+  if (PE.busy || !PE.open) return;
+  peMsg('');
+  const handle = PE.handle;
+  const next = !PE.hidden;
 
-  const newHidden = !product.is_hidden;
+  peSetBusy(true, 'Save changes');
+  try {
+    const { data, error } = await sb.from('products')
+      .update({ is_hidden: next })
+      .eq('id', PE.id)
+      .select('id, is_hidden');
+    if (error) throw peDbError(error, next ? 'hide product' : 'show product');
+    if (!data || !data.length) throw peBlockedError(next ? 'hide' : 'show');
 
-  const { data: hideRows, error } = await sb
-    .from('products')
-    .update({ is_hidden: newHidden })
-    .eq('id', productId)
-    .select('id');
+    PE.hidden = data[0].is_hidden === true;
+    const { product } = peFindProduct(handle, PE.id);
+    if (product) product.is_hidden = PE.hidden;
 
-  const problem = productWriteProblem(error, hideRows, 'Hide');
-  if (problem) {
-    showToast(problem);
-    return;
+    peRenderVisibility();
+    peMsg(PE.hidden
+      ? 'Hidden — buyers can no longer see this product.'
+      : 'Visible again — buyers can see this product.', 'ok');
+    peRefreshStore(handle);
+  } catch (err) {
+    peMsg(err.message || 'Could not update visibility.', 'err');
+  } finally {
+    peSetBusy(false);
   }
-
-  // Update local cache
-  product.is_hidden = newHidden;
-
-  // Update button label
-  const hideBtn = document.getElementById('epm-hide-btn');
-  if (hideBtn) {
-    hideBtn.textContent = newHidden
-      ? '👁 Show product'
-      : '👁 Hide product';
-    hideBtn.style.borderColor = newHidden
-      ? 'var(--leaf)' : 'var(--border)';
-    hideBtn.style.color = newHidden
-      ? 'var(--leaf)' : 'var(--ink-mid)';
-  }
-
-  showToast(newHidden
-    ? 'Product hidden from store'
-    : 'Product visible again ✓');
-
-  // Re-render store to reflect change
-  closeEditProduct();
-  openStore(handle);
 }
 
-async function deleteProduct() {
-  const productId = document.getElementById('epm-prod-id').value;
-  const handle = document.getElementById('epm-handle').value;
-  if (!productId || !handle) return;
+// ── delete (two steps, no native confirm) ───────────
 
-  const store = allStores.find(s => s.handle === handle);
-  const product = (store?.products || [])
-    .find(p => String(p.id) === String(productId));
-  const productName = product?.name || 'this product';
-
-  // Confirm before deleting
-  if (!confirm(
-    `Delete "${productName}"? This cannot be undone.`
-  )) return;
-
-  const { data: delRows, error } = await sb
-    .from('products')
-    .delete()
-    .eq('id', productId)
-    .select('id');
-
-  const problem = productWriteProblem(error, delRows, 'Delete');
-  if (problem) {
-    showToast(problem);
-    return;
-  }
-
-  // Remove from local cache
-  if (store) {
-    store.products = (store.products || [])
-      .filter(p => String(p.id) !== String(productId));
-  }
-
-  showToast('Product deleted ✓');
-  closeEditProduct();
-  openStore(handle);
+function peAskDelete() {
+  if (PE.busy || !PE.open) return;
+  peMsg('');
+  PE.confirmingDelete = true;
+  peRenderDelete();
+  peEl('pe-del-no').focus();
 }
 
-function previewEditImage(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    document.getElementById('ep-current-img').innerHTML =
-      `<img src="${e.target.result}"
-            style="width:100%;max-height:140px;
-                   object-fit:contain;border-radius:10px;
-                   background:var(--paper-deep);">`;
-    // Store file for saveEditProduct
-    const modal = document.getElementById('edit-prod-modal');
-    modal._pendingMainPhoto = file;
-  };
-  reader.readAsDataURL(file);
+function peCancelDelete() {
+  if (PE.busy) return;
+  PE.confirmingDelete = false;
+  peRenderDelete();
+}
+
+async function peConfirmDelete() {
+  if (PE.busy || !PE.open || !PE.confirmingDelete) return;
+  peMsg('');
+  const handle = PE.handle;
+  const id = PE.id;
+  const photoUrls = PE.orig.urls.slice();
+
+  peSetBusy(true);
+  try {
+    const { data, error } = await sb.from('products')
+      .delete()
+      .eq('id', id)
+      .select('id');
+    if (error) throw peDbError(error, 'delete');
+    if (!data || !data.length) throw peBlockedError('delete');
+
+    const store = allStores.find(s => s.handle === handle);
+    if (store) store.products = (store.products || []).filter(p => String(p.id) !== id);
+
+    peCleanupStorage(photoUrls);
+
+    peClose();
+    showToast('Product deleted ✓');
+    peRefreshStore(handle);
+  } catch (err) {
+    peSetBusy(false);
+    PE.confirmingDelete = false;
+    peRenderDelete();
+    peMsg(err.message || 'Could not delete this product.', 'err');
+  }
 }
 
 // ═══════════════════════════════════

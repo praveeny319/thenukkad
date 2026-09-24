@@ -1165,99 +1165,71 @@
   </div>
 </footer>
 
-<!-- EDIT PRODUCT MODAL -->
-<div id="edit-prod-modal" onclick="if(event.target===this)closeEditProduct()">
-  <div class="epm-box">
-    <div class="epm-title">Edit product</div>
-    <input type="hidden" id="epm-prod-id">
-    <input type="hidden" id="epm-handle">
-    <input class="ct" id="epm-name" placeholder="Product name" type="text">
-    <input class="ct" id="epm-price" placeholder="Price (₹)" type="number" min="0">
-    <textarea class="ct" id="epm-desc" placeholder="Description" rows="3"></textarea>
-    <div style="margin-bottom:1rem;">
-      <label style="font-size:0.78rem;font-weight:600;
-                    color:var(--ink-mid);display:block;
-                    margin-bottom:0.5rem;">
-        Product Photos (up to 6)
-      </label>
-      <!-- Main photo -->
-      <div id="ep-current-img"
-           style="margin-bottom:0.6rem;border-radius:10px;
-                  overflow:hidden;max-height:140px;
-                  background:var(--paper-deep);
-                  display:flex;align-items:center;
-                  justify-content:center;
-                  min-height:60px;"></div>
-      <label for="ep-image-file"
-             style="display:inline-flex;
-                    align-items:center;gap:0.4rem;
-                    background:var(--paper-deep);
-                    border:1.5px dashed var(--border);
-                    color:var(--ink-mid);font-size:0.78rem;
-                    font-weight:600;padding:0.55rem 1rem;
-                    border-radius:100px;cursor:pointer;
-                    font-family:'Plus Jakarta Sans',
-                    sans-serif;transition:all 0.2s;
-                    margin-bottom:0.8rem;">
-        📷 Change main photo
-      </label>
-      <input type="file" id="ep-image-file"
-             accept="image/*" style="display:none"
-             onchange="previewEditImage(event)">
-      <!-- Extra photos grid -->
-      <label style="font-size:0.74rem;font-weight:600;
-                    color:var(--ink-mid);display:block;
-                    margin-bottom:0.4rem;">
-        Extra photos
-        <span style="font-weight:400;
-                     color:var(--ink-faint);">
-          (optional — different angles)
-        </span>
-      </label>
-      <div id="ep-extra-photos"
-           style="display:grid;
-                  grid-template-columns:repeat(4,1fr);
-                  gap:0.4rem;margin-bottom:0.5rem;">
+<!-- PRODUCT EDITOR (owner) — logic lives in js/app.js "PRODUCT EDITOR" -->
+<div id="pe-overlay" role="dialog" aria-modal="true" aria-labelledby="pe-title" onclick="if(event.target===this)peRequestClose()">
+  <div class="pe-sheet">
+    <div class="pe-head">
+      <div>
+        <div class="pe-title" id="pe-title">Edit product</div>
+        <span class="pe-pill visible" id="pe-pill">Visible to buyers</span>
       </div>
-      <input type="file" id="ep-extra-file"
-             accept="image/*" style="display:none"
-             onchange="handleExtraPhotoUpload(event)">
+      <button type="button" class="pe-close" aria-label="Close" onclick="peRequestClose()">✕</button>
     </div>
-    <div class="epm-row">
-      <button class="epm-save" id="epm-save-btn" onclick="saveEditProduct()">Save</button>
-      <button class="epm-cancel" onclick="closeEditProduct()">Cancel</button>
+
+    <div class="pe-body" id="pe-body">
+      <div class="pe-label-row">
+        <span class="pe-label">Photos</span>
+        <span class="pe-count" id="pe-photo-count">0/6</span>
+      </div>
+      <div class="pe-hint">The first photo is shown on your store. Tap ★ on another photo to make it the main one.</div>
+      <div class="pe-photos" id="pe-photos"></div>
+      <input type="file" id="pe-file" accept="image/*" multiple hidden onchange="pePhotosPicked(this)">
+
+      <div class="pe-field" id="pe-f-name">
+        <label class="pe-label" for="pe-name">Product name</label>
+        <input type="text" id="pe-name" maxlength="80" autocomplete="off" placeholder="e.g. Chocolate Truffle Cake"
+               oninput="peClearFieldError('name')" onkeydown="if(event.key==='Enter'){event.preventDefault();peSave();}">
+        <div class="pe-ferr" id="pe-e-name"></div>
+      </div>
+
+      <div class="pe-field" id="pe-f-price">
+        <label class="pe-label" for="pe-price">Price (₹)</label>
+        <input type="text" id="pe-price" inputmode="decimal" maxlength="10" autocomplete="off" placeholder="e.g. 250"
+               oninput="peClearFieldError('price')" onkeydown="if(event.key==='Enter'){event.preventDefault();peSave();}">
+        <div class="pe-ferr" id="pe-e-price"></div>
+      </div>
+
+      <div class="pe-field" id="pe-f-desc">
+        <div class="pe-label-row">
+          <label class="pe-label" for="pe-desc">Description</label>
+          <span class="pe-count" id="pe-desc-count">0/500</span>
+        </div>
+        <textarea id="pe-desc" rows="4" placeholder="What makes this product special?"
+                  oninput="peClearFieldError('desc');peRenderDescCount()"></textarea>
+        <div class="pe-ferr" id="pe-e-desc"></div>
+      </div>
+
+      <div class="pe-msg" id="pe-msg" role="alert" aria-live="polite"></div>
     </div>
-    <div style="display:flex;gap:0.5rem;
-                margin-top:0.5rem;">
-      <button id="epm-hide-btn"
-              onclick="toggleHideProduct()"
-              style="flex:1;background:none;
-                     border:1px solid var(--border);
-                     border-radius:100px;
-                     padding:0.55rem;
-                     font-size:0.82rem;
-                     font-weight:600;
-                     cursor:pointer;
-                     font-family:'Plus Jakarta Sans',
-                     sans-serif;
-                     color:var(--ink-mid);
-                     transition:all 0.2s;">
-        👁 Hide product
-      </button>
-      <button onclick="deleteProduct()"
-              style="flex:1;background:none;
-                     border:1px solid #ffaaaa;
-                     border-radius:100px;
-                     padding:0.55rem;
-                     font-size:0.82rem;
-                     font-weight:600;
-                     cursor:pointer;
-                     font-family:'Plus Jakarta Sans',
-                     sans-serif;
-                     color:#cc3333;
-                     transition:all 0.2s;">
-        🗑 Delete
-      </button>
+
+    <div class="pe-foot">
+      <div class="pe-actions">
+        <button type="button" class="pe-btn primary" id="pe-save" onclick="peSave()">Save changes</button>
+        <button type="button" class="pe-btn" id="pe-cancel" onclick="peRequestClose()">Cancel</button>
+      </div>
+
+      <div class="pe-danger" id="pe-danger">
+        <button type="button" class="pe-btn ghost" id="pe-hide-btn" onclick="peToggleHidden()">🙈 Hide product</button>
+        <button type="button" class="pe-btn ghost del" id="pe-del-btn" onclick="peAskDelete()">🗑 Delete</button>
+      </div>
+
+      <div class="pe-confirm" id="pe-confirm" style="display:none;">
+        <div class="pe-confirm-text" id="pe-confirm-text"></div>
+        <div class="pe-actions">
+          <button type="button" class="pe-btn danger" id="pe-del-yes" onclick="peConfirmDelete()">Yes, delete</button>
+          <button type="button" class="pe-btn" id="pe-del-no" onclick="peCancelDelete()">Keep it</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
