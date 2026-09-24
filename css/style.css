@@ -1548,29 +1548,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--paper);color:va
   margin-bottom: 1.2rem;
 }
 
-/* ════ ORDER STATUS — REBUILT ════ */
-#sv-status-badge.is-open{
-  background:rgba(37,211,102,0.2);
-  border:1px solid rgba(37,211,102,0.45);
-  color:#1afa72;
-}
-#sv-status-badge.is-closed{
-  background:rgba(200,60,60,0.2);
-  border:1px solid rgba(200,60,60,0.45);
-  color:#ff8080;
-}
-#sv-status-dot.is-open{
-  background:#25D366;
-  animation:statusPulse 2s ease-in-out infinite;
-}
-#sv-status-dot.is-closed{
-  background:#c04040;
-}
-@keyframes statusPulse{
-  0%,100%{box-shadow:0 0 0 3px rgba(37,211,102,0.3);}
-  50%{box-shadow:0 0 0 6px rgba(37,211,102,0.1);}
-}
-
 /* ════ AI PRODUCT BUILDER ════ */
 .ai-builder-strip{
   background:linear-gradient(135deg,

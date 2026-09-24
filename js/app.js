@@ -693,18 +693,13 @@ async function openStore(handle) {
   try {
     const { data: freshStore, error: fetchErr } = await sb
       .from('stores')
-      .select('is_accepting_orders, logo_url, story, cover_photos')
+      .select('logo_url, story, cover_photos')
       .eq('handle', handle)
       .single();
     if (fetchErr) {
       console.warn('Store fetch error:', fetchErr.message);
     }
     if (freshStore) {
-      // Explicitly handle null — treat null as true (open)
-      s.is_accepting_orders =
-        freshStore.is_accepting_orders === null
-          ? true
-          : freshStore.is_accepting_orders;
       if (freshStore.logo_url) s.logo_url = freshStore.logo_url;
       if (freshStore.story) s.story = freshStore.story;
       if (freshStore.cover_photos) s.cover_photos = freshStore.cover_photos;
@@ -815,9 +810,6 @@ async function openStore(handle) {
         </div>
       </div>`;
   }
-
-  // Render order status UI
-  renderOrderStatus(s.is_accepting_orders, finalOwner);
 
   // Add product button
   document.getElementById('sv-add-prod-btn').style.display = finalOwner ? 'block' : 'none';
@@ -1624,89 +1616,6 @@ async function saveStory() {
 }
 
 // ═══════════════════════════════════
-// ORDER STATUS — REBUILT FROM SCRATCH
-// ═══════════════════════════════════
-
-function renderOrderStatus(isAccepting, isOwner) {
-  // Treat null/undefined as true (open)
-  const open = isAccepting !== false;
-
-  const badge = document.getElementById('sv-status-badge');
-  const dot = document.getElementById('sv-status-dot');
-  const text = document.getElementById('sv-status-text');
-  const toggleBtn = document.getElementById('sv-toggle-btn');
-
-  if (!badge) return;
-
-  // Badge: show to everyone if open, show to owner even if closed so they can reopen
-  badge.style.display = (open || isOwner) ? 'inline-flex' : 'none';
-  badge.className = open ? 'is-open' : 'is-closed';
-  dot.className = open ? 'is-open' : 'is-closed';
-  text.textContent = open ? 'Taking orders' : 'Not taking orders';
-
-  // Toggle button: owner only
-  if (toggleBtn) {
-    toggleBtn.style.display = isOwner ? 'block' : 'none';
-    toggleBtn.textContent = open ? '⏸ Pause orders' : '▶ Accept orders';
-  }
-}
-
-async function toggleOrderStatus() {
-  if (!curStore || !curStore.handle) {
-    showToast('No store loaded');
-    return;
-  }
-
-  const btn = document.getElementById('sv-toggle-btn');
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = 'Saving...';
-  }
-
-  // Read current value fresh from Supabase
-  const { data: fresh, error: readErr } = await sb
-    .from('stores')
-    .select('is_accepting_orders')
-    .eq('handle', curStore.handle)
-    .single();
-
-  if (readErr) {
-    showToast('Error reading status');
-    console.error('Read error:', readErr);
-    if (btn) btn.disabled = false;
-    return;
-  }
-
-  // Compute new value — null/true → false, false → true
-  const currentlyOpen = fresh.is_accepting_orders !== false;
-  const newVal = !currentlyOpen;
-
-  // Write new value to Supabase
-  const { error: writeErr } = await sb
-    .from('stores')
-    .update({ is_accepting_orders: newVal })
-    .eq('handle', curStore.handle);
-
-  if (writeErr) {
-    showToast('Save failed: ' + writeErr.message);
-    console.error('Write error:', writeErr);
-    if (btn) btn.disabled = false;
-    return;
-  }
-
-  // Update local cache
-  curStore.is_accepting_orders = newVal;
-  const idx = allStores.findIndex(x => x.handle === curStore.handle);
-  if (idx > -1) allStores[idx].is_accepting_orders = newVal;
-
-  // Re-render status UI
-  renderOrderStatus(newVal, true);
-
-  if (btn) btn.disabled = false;
-  showToast(newVal ? '✓ Now accepting orders' : 'Orders paused');
-}
-
-// ═══════════════════════════════════
 // ADMIN PANEL
 // ═══════════════════════════════════
 
@@ -1774,7 +1683,6 @@ async function loadAdminData() {
     } else {
       storesEl.innerHTML = storeList.map(s => {
         const storeOrders = orderList.filter(o => o.store_handle === s.handle);
-        const isOpen = s.is_accepting_orders !== false;
         return `<div class="adm-store-row">
           <div class="adm-store-emoji">${s.emoji || '🏪'}</div>
           <div class="adm-store-info">
@@ -1798,11 +1706,6 @@ async function loadAdminData() {
                     style="background:var(--earth);"
                     onclick="adminEditStore('${s.handle}')">
               Edit
-            </button>
-            <button class="adm-toggle-btn ${isOpen ? 'active' : ''}"
-                    id="adm-toggle-${s.handle}"
-                    onclick="adminToggleStore('${s.handle}',${isOpen})">
-              ${isOpen ? '✓ Open' : 'Paused'}
             </button>
           </div>
         </div>`;
@@ -1877,28 +1780,6 @@ function adminEditStore(handle) {
   _adminEditHandle = handle;
   openStore(handle);
   showToast('👑 Admin edit mode — owner controls active');
-}
-
-async function adminToggleStore(handle, currentlyOpen) {
-  const newVal = !currentlyOpen;
-  const { error } = await sb
-    .from('stores')
-    .update({ is_accepting_orders: newVal })
-    .eq('handle', handle);
-
-  if (error) {
-    showToast('Toggle failed: ' + error.message);
-    return;
-  }
-
-  // Update button
-  const btn = document.getElementById('adm-toggle-' + handle);
-  if (btn) {
-    btn.textContent = newVal ? '✓ Open' : 'Paused';
-    btn.className = 'adm-toggle-btn' + (newVal ? ' active' : '');
-    btn.onclick = () => adminToggleStore(handle, newVal);
-  }
-  showToast(newVal ? `${handle} is now open` : `${handle} paused`);
 }
 
 // ═══════════════════════════════════
