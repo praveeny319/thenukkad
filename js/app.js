@@ -3795,10 +3795,7 @@ function showAddProductModal() {
   document.getElementById('apm-name').value = '';
   document.getElementById('apm-price').value = '';
   document.getElementById('apm-desc').value = '';
-  document.getElementById('apm-ipv').src = '';
-  document.getElementById('apm-ipl').style.display = 'block';
-  document.getElementById('apm-ipw').style.display = 'none';
-  document.getElementById('apm-iua').classList.remove('has-img');
+  apmResetPhotos();
   document.getElementById('add-prod-modal').classList.add('open');
 
   // Reset AI builder state
@@ -3833,8 +3830,6 @@ function showAddProductModal() {
 function closeAddProductModal() {
   document.getElementById('add-prod-modal').classList.remove('open');
 }
-
-let apmImageFile = null;
 
 // ═══════════════════════════════════
 // IMAGE PROCESSOR
@@ -3907,79 +3902,271 @@ function processProductImage(file, outputSize, quality) {
   });
 }
 
-async function handleApmImg(e) {
-  const file = e.target.files[0];
-  if (!file) return;
+// ═══════════════════════════════════
+// ADD PRODUCT — photos (up to 8) + save
+//  • apmPhotos is one ordered list; index 0 is the main photo
+//    (image_url), the rest go to images[].
+//  • Photos are compressed when picked, uploaded on Save.
+//  • An upload failure stops the save (the old code silently created
+//    the product without its photo). Already-uploaded photos are
+//    remembered, so a retry never uploads them twice.
+// ═══════════════════════════════════
+const APM_MAX_PHOTOS = 8;
+const APM_MAX_FILE_MB = 8;
+let apmPhotos = [];          // [{ key, url, file }]  file !== null → not uploaded yet
+let apmReplaceKey = null;
+let apmBusy = false;
+let _apmKey = 0;
 
-  showToast('Processing image…');
-  try {
-    const processed = await processProductImage(file, 800, 0.85);
-    apmImageFile = processed;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      document.getElementById('apm-ipv').src = ev.target.result;
-      document.getElementById('apm-ipl').style.display = 'none';
-      document.getElementById('apm-ipw').style.display = 'block';
-      document.getElementById('apm-iua').classList.add('has-img');
-    };
-    reader.readAsDataURL(processed);
-    showToast('✓ Image ready');
-  } catch(err) {
-    console.error('Image process error:', err);
-    apmImageFile = file;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      document.getElementById('apm-ipv').src = ev.target.result;
-      document.getElementById('apm-ipl').style.display = 'none';
-      document.getElementById('apm-ipw').style.display = 'block';
-      document.getElementById('apm-iua').classList.add('has-img');
-    };
-    reader.readAsDataURL(file);
+function apmMsg(text, kind) {
+  const el = document.getElementById('apm-msg');
+  if (!el) return;
+  el.textContent = text || '';
+  el.className = 'pe-msg' + (text ? ' show ' + (kind || 'err') : '');
+}
+
+// First (main) photo's file — used by the AI auto-fill
+function apmMainFile() {
+  return apmPhotos.length ? apmPhotos[0].file : null;
+}
+
+function apmResetPhotos() {
+  apmPhotos.forEach(p => { if (p.file && p.url.startsWith('blob:')) URL.revokeObjectURL(p.url); });
+  apmPhotos = [];
+  apmReplaceKey = null;
+  apmBusy = false;
+  apmMsg('');
+  apmRenderPhotos();
+}
+
+async function apmPrepare(file) {
+  try { return await processProductImage(file, 800, 0.85); }
+  catch (err) { console.warn('Image processing failed, using original:', err); return file; }
+}
+
+function apmCheckFile(f) {
+  if (!f.type.startsWith('image/')) return `“${f.name}” isn’t an image`;
+  if (f.size > APM_MAX_FILE_MB * 1024 * 1024) return `“${f.name}” is over ${APM_MAX_FILE_MB}MB`;
+  return null;
+}
+
+function apmRenderPhotos() {
+  const grid = document.getElementById('apm-photos');
+  if (!grid) return;
+  grid.textContent = '';
+
+  apmPhotos.forEach((ph, i) => {
+    const tile = document.createElement('div');
+    tile.className = 'pe-tile' + (i === 0 ? ' main' : '');
+
+    const img = document.createElement('img');
+    img.src = ph.url;
+    img.alt = 'Product photo ' + (i + 1);
+    img.draggable = false;
+    tile.appendChild(img);
+
+    if (i === 0) {
+      const tag = document.createElement('span');
+      tag.className = 'pe-tag';
+      tag.textContent = 'Main';
+      tile.appendChild(tag);
+    } else {
+      const star = document.createElement('button');
+      star.type = 'button';
+      star.className = 'pe-tile-btn pe-star';
+      star.title = 'Make this the main photo';
+      star.setAttribute('aria-label', 'Make photo ' + (i + 1) + ' the main photo');
+      star.textContent = '★';
+      star.addEventListener('click', () => apmMakeMain(ph.key));
+      tile.appendChild(star);
+    }
+
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'pe-tile-btn pe-rm';
+    del.title = 'Remove photo';
+    del.setAttribute('aria-label', 'Remove photo ' + (i + 1));
+    del.textContent = '✕';
+    del.addEventListener('click', () => apmRemovePhoto(ph.key));
+    tile.appendChild(del);
+
+    const chg = document.createElement('button');
+    chg.type = 'button';
+    chg.className = 'pe-tile-btn pe-chg';
+    chg.setAttribute('aria-label', 'Change photo ' + (i + 1));
+    chg.textContent = '📷 Change';
+    chg.addEventListener('click', () => {
+      if (apmBusy) return;
+      apmReplaceKey = ph.key;
+      document.getElementById('apm-replace-file').click();
+    });
+    tile.appendChild(chg);
+
+    grid.appendChild(tile);
+  });
+
+  const full = apmPhotos.length >= APM_MAX_PHOTOS;
+  if (!full) {
+    const add = document.createElement('button');
+    add.type = 'button';
+    add.className = 'pe-add';
+    add.setAttribute('aria-label', 'Add photos');
+    add.innerHTML = '<span>＋</span><small>Add</small>';
+    add.addEventListener('click', () => document.getElementById('apm-img').click());
+    grid.appendChild(add);
   }
+
+  document.getElementById('apm-photo-count').textContent = apmPhotos.length + '/' + APM_MAX_PHOTOS;
+  document.getElementById('apm-add-btn').textContent =
+    full ? '📷 Photo limit reached (8)' : '📷 Add photos';
+}
+
+async function apmPhotosPicked(input) {
+  const files = [...input.files];
+  input.value = '';
+  if (!files.length || apmBusy) return;
+
+  if (apmPhotos.length >= APM_MAX_PHOTOS) {
+    apmMsg(`You already have ${APM_MAX_PHOTOS} photos — remove one, or use Change on a photo.`, 'err');
+    return;
+  }
+
+  const notes = [];
+  const accepted = [];
+  let over = 0;
+  files.forEach(f => {
+    const problem = apmCheckFile(f);
+    if (problem) { notes.push(problem); return; }
+    if (apmPhotos.length + accepted.length >= APM_MAX_PHOTOS) { over++; return; }
+    accepted.push(f);
+  });
+  if (over) notes.push(`Only ${APM_MAX_PHOTOS} photos allowed — ${over} not added`);
+
+  apmBusy = true;
+  apmMsg(accepted.length ? 'Processing photos…' : notes.join('. '), accepted.length ? 'ok' : 'err');
+  for (const f of accepted) {
+    const prepared = await apmPrepare(f);
+    apmPhotos.push({ key: ++_apmKey, url: URL.createObjectURL(prepared), file: prepared });
+    apmRenderPhotos();
+  }
+  apmBusy = false;
+  if (accepted.length) apmMsg(notes.join('. '), notes.length ? 'err' : '');
+}
+
+async function apmPhotoReplaced(input) {
+  const f = input.files[0];
+  input.value = '';
+  const key = apmReplaceKey;
+  apmReplaceKey = null;
+  if (!f || apmBusy) return;
+  const ph = apmPhotos.find(p => p.key === key);
+  if (!ph) return;
+  const problem = apmCheckFile(f);
+  if (problem) { apmMsg(problem, 'err'); return; }
+
+  apmBusy = true;
+  const prepared = await apmPrepare(f);
+  apmBusy = false;
+  if (!apmPhotos.includes(ph)) return;          // removed while processing
+  if (ph.file && ph.url.startsWith('blob:')) URL.revokeObjectURL(ph.url);
+  ph.url = URL.createObjectURL(prepared);        // same slot keeps its position
+  ph.file = prepared;
+  apmMsg('');
+  apmRenderPhotos();
+}
+
+function apmRemovePhoto(key) {
+  if (apmBusy) return;
+  const i = apmPhotos.findIndex(p => p.key === key);
+  if (i < 0) return;
+  const [ph] = apmPhotos.splice(i, 1);
+  if (ph.file && ph.url.startsWith('blob:')) URL.revokeObjectURL(ph.url);
+  apmRenderPhotos();
+}
+
+function apmMakeMain(key) {
+  if (apmBusy) return;
+  const i = apmPhotos.findIndex(p => p.key === key);
+  if (i <= 0) return;
+  const [ph] = apmPhotos.splice(i, 1);
+  apmPhotos.unshift(ph);
+  apmRenderPhotos();
+}
+
+async function apmUploadPhoto(ph, handle, n) {
+  const file = ph.file;
+  const ext = ((file.type.split('/')[1] || 'png').replace('jpeg', 'jpg')
+    .replace(/[^a-z0-9]/gi, '')) || 'png';
+  const path = `${handle}/${Date.now()}_${n}.${ext}`;
+  const { error } = await sb.storage.from('product-images')
+    .upload(path, file, { contentType: file.type || 'image/png', upsert: false });
+  if (error) throw error;
+  return sb.storage.from('product-images').getPublicUrl(path).data.publicUrl;
 }
 
 async function saveNewProduct() {
+  if (apmBusy) return;
   const name = document.getElementById('apm-name').value.trim();
   const price = document.getElementById('apm-price').value.trim();
   const desc = document.getElementById('apm-desc').value.trim();
-  if (!name || !price) { showToast('Please enter name and price'); return; }
+  apmMsg('');
 
+  if (!name || !price) { apmMsg('Please enter a product name and price'); return; }
+  if (name.length > 80) { apmMsg('Keep the product name under 80 characters'); return; }
+  if (!/^\d+(\.\d{1,2})?$/.test(price)) { apmMsg('Enter a valid price, e.g. 250 or 249.50'); return; }
+  if (desc.length > 500) { apmMsg('Keep the description under 500 characters'); return; }
+  if (!curStore || !curStore.handle) { apmMsg('No store selected — reopen your store and try again'); return; }
+
+  const handle = curStore.handle;
   const btn = document.getElementById('apm-save-btn');
+  apmBusy = true;
   btn.disabled = true;
-  btn.innerHTML = '<span class="spin"></span> Saving...';
 
   try {
-    let imageUrl = null;
-    if (apmImageFile) {
-      const ext = apmImageFile.name.split('.').pop();
-      const fileName = `${curStore.handle}/${Date.now()}.${ext}`;
-      const { error: upErr } = await sb.storage.from('product-images').upload(fileName, apmImageFile, { upsert: true });
-      if (!upErr) {
-        const { data: urlData } = sb.storage.from('product-images').getPublicUrl(fileName);
-        imageUrl = urlData.publicUrl;
+    // 1) upload photos that are still local files
+    const pending = apmPhotos.filter(p => p.file);
+    for (let i = 0; i < pending.length; i++) {
+      btn.innerHTML = `<span class="spin"></span> Uploading photo ${i + 1}/${pending.length}...`;
+      let url;
+      try {
+        url = await apmUploadPhoto(pending[i], handle, i + 1);
+      } catch (err) {
+        throw new Error('Photo upload failed: ' + (err?.message || err) + '. Nothing was saved.');
       }
+      if (pending[i].url.startsWith('blob:')) URL.revokeObjectURL(pending[i].url);
+      pending[i].url = url;          // remembered: a retry won't upload it again
+      pending[i].file = null;
     }
+    if (pending.length) apmRenderPhotos();
 
-    const { error } = await sb.from('products').insert({
-      store_handle: curStore.handle,
-      name, price, description: desc, image_url: imageUrl
-    });
-    if (error) throw error;
+    // 2) create the product
+    btn.innerHTML = '<span class="spin"></span> Saving...';
+    const urls = apmPhotos.map(p => p.url);
+    const row = { store_handle: handle, name, price, description: desc, image_url: urls[0] || null };
+    if (urls.length > 1) row.images = urls.slice(1);
+
+    const { error } = await sb.from('products').insert(row);
+    if (error) {
+      console.error('Add product error:', error);
+      if (/images/i.test(error.message || '')) {
+        throw new Error('Your database is missing the “images” column needed for extra photos. Run in Supabase: ALTER TABLE products ADD COLUMN IF NOT EXISTS images JSONB DEFAULT \'[]\';');
+      }
+      throw new Error('Could not save product: ' + error.message);
+    }
 
     showToast('Product added! 🎉');
     closeAddProductModal();
-    apmImageFile = null;
-
-    // Reload store
+    apmResetPhotos();
     await loadStores();
-    openStore(curStore.handle);
-
-  } catch(e) {
-    console.error(e);
-    showToast('Error saving product');
+    openStore(handle);
+  } catch (err) {
+    console.error(err);
+    apmMsg(err.message || 'Error saving product — please try again');
+  } finally {
+    apmBusy = false;
+    btn.disabled = false;
+    btn.innerHTML = 'Save Product';
   }
-  btn.disabled = false;
-  btn.innerHTML = 'Save Product';
 }
 
 // ═══════════════════════════════════
@@ -4097,7 +4284,8 @@ function finishVoiceRecording() {
 
 async function aiGenerateProduct() {
   const generateBtn = document.getElementById('ai-generate-btn');
-  const hasPhoto = !!apmImageFile;
+  const aiPhotoFile = apmMainFile();
+  const hasPhoto = !!aiPhotoFile;
   const hasVoice = !!aiTranscript.trim();
 
   if (!hasVoice && !hasPhoto) {
@@ -4115,8 +4303,8 @@ async function aiGenerateProduct() {
     // or handle the key directly in the browser.
     const payload = { transcript: aiTranscript.trim() };
     if (hasPhoto) {
-      payload.image_base64 = await fileToBase64(apmImageFile);
-      payload.image_mime_type = apmImageFile.type || 'image/jpeg';
+      payload.image_base64 = await fileToBase64(aiPhotoFile);
+      payload.image_mime_type = aiPhotoFile.type || 'image/jpeg';
     }
 
     const { data, error } = await sb.functions.invoke('ai-generate-product', {

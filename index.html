@@ -1029,20 +1029,19 @@
       <button class="apm-close" onclick="closeAddProductModal()">✕</button>
     </div>
 
-    <!-- Photo upload -->
+    <!-- Photos (up to 8) -->
     <div class="cf">
-      <div class="img-upload-area" id="apm-iua">
-        <div id="apm-ipl">
-          <div style="font-size:1.5rem;margin-bottom:0.3rem">📷</div>
-          <div class="img-upload-label">Click to take or upload product photo</div>
-          <button type="button" class="img-upload-btn" onclick="document.getElementById('apm-img').click()">📷 Choose Photo</button>
-        </div>
-        <div id="apm-ipw" style="display:none">
-          <img id="apm-ipv" class="img-upload-preview" alt="preview">
-          <button type="button" class="img-change-btn" onclick="document.getElementById('apm-img').click()">Change Photo</button>
-        </div>
-        <input type="file" class="img-upload-input" id="apm-img" accept="image/*" onchange="handleApmImg(event)">
+      <div class="pe-label-row">
+        <span class="cl" style="margin:0">Photos</span>
+        <span class="pe-count" id="apm-photo-count">0/8</span>
       </div>
+      <div class="pe-hint">Add up to 8 photos — buyers can swipe through them. The first photo is the main one shown on your store; tap ★ on any photo to make it the main one.</div>
+      <div class="pe-photo-tools">
+        <button type="button" class="pe-tool" id="apm-add-btn" onclick="document.getElementById('apm-img').click()">📷 Add photos</button>
+      </div>
+      <div class="pe-photos" id="apm-photos"></div>
+      <input type="file" id="apm-img" accept="image/*" multiple hidden onchange="apmPhotosPicked(this)">
+      <input type="file" id="apm-replace-file" accept="image/*" hidden onchange="apmPhotoReplaced(this)">
     </div>
 
     <!-- Manual fields -->
@@ -1058,6 +1057,7 @@
       <label class="cl">Description</label>
       <textarea class="ct" id="apm-desc" placeholder="Describe your product..." rows="3"></textarea>
     </div>
+    <div class="pe-msg" id="apm-msg" role="alert" aria-live="polite" style="margin-top:0.8rem;"></div>
     <button class="apm-save" id="apm-save-btn" onclick="saveNewProduct()">Save Product</button>
   </div>
 </div>
