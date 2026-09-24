@@ -237,8 +237,10 @@ window.addEventListener('load', async () => {
         encodeURIComponent(storeParam) +
         '&select=*&order=created_at.asc'
       );
+      // Keep hidden products in the cache — openStore() hides
+      // them from buyers but the owner must still see them.
       freshStore.products = Array.isArray(products)
-        ? products.filter(p => !p.is_hidden) : [];
+        ? products : [];
 
       // Update cache
       const ei = allStores.findIndex(
@@ -1193,6 +1195,31 @@ async function resetCoverPhotos() {
 // OWNER PRODUCT EDIT
 // ═══════════════════════════════════
 
+/*
+  Supabase RLS — run in SQL editor if edit / hide / delete
+  say "blocked by database permissions":
+
+  create policy "products update" on products for update using (true) with check (true);
+  create policy "products delete" on products for delete using (true);
+  ALTER TABLE products ADD COLUMN IF NOT EXISTS images JSONB DEFAULT '[]';
+  ALTER TABLE products ADD COLUMN IF NOT EXISTS is_hidden BOOLEAN DEFAULT false;
+*/
+
+// Supabase returns no error when RLS blocks an update/delete —
+// it just affects 0 rows. Treat that as a failure.
+// Returns a user-facing message, or null if the write worked.
+function productWriteProblem(error, rows, action) {
+  if (error) {
+    console.error(action + ' error:', error);
+    return action + ' failed: ' + error.message;
+  }
+  if (!rows || rows.length === 0) {
+    console.error(action + ': 0 rows affected (blocked by RLS or product not found)');
+    return action + ' blocked by database permissions — see console';
+  }
+  return null;
+}
+
 function openEditProduct(e, handle, productId) {
   e.stopPropagation();
   const store = allStores.find(s => s.handle === handle);
@@ -1429,14 +1456,15 @@ async function saveEditProduct() {
     if (image_url) updates.image_url = image_url;
 
     // Save to Supabase
-    const { error } = await sb
+    const { data: savedRows, error } = await sb
       .from('products')
       .update(updates)
-      .eq('id', productId);
+      .eq('id', productId)
+      .select('id');
 
-    if (error) {
-      console.error('Product update error:', error);
-      showToast('Save failed: ' + error.message);
+    const problem = productWriteProblem(error, savedRows, 'Save');
+    if (problem) {
+      showToast(problem);
       btn.textContent = 'Save'; btn.disabled = false;
       return;
     }
@@ -1481,13 +1509,15 @@ async function toggleHideProduct() {
 
   const newHidden = !product.is_hidden;
 
-  const { error } = await sb
+  const { data: hideRows, error } = await sb
     .from('products')
     .update({ is_hidden: newHidden })
-    .eq('id', productId);
+    .eq('id', productId)
+    .select('id');
 
-  if (error) {
-    showToast('Could not update — try again');
+  const problem = productWriteProblem(error, hideRows, 'Hide');
+  if (problem) {
+    showToast(problem);
     return;
   }
 
@@ -1530,14 +1560,15 @@ async function deleteProduct() {
     `Delete "${productName}"? This cannot be undone.`
   )) return;
 
-  const { error } = await sb
+  const { data: delRows, error } = await sb
     .from('products')
     .delete()
-    .eq('id', productId);
+    .eq('id', productId)
+    .select('id');
 
-  if (error) {
-    showToast('Could not delete — try again');
-    console.error('Delete error:', error);
+  const problem = productWriteProblem(error, delRows, 'Delete');
+  if (problem) {
+    showToast(problem);
     return;
   }
 
