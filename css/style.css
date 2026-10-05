@@ -2246,32 +2246,35 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--paper);color:va
   display:flex;
   align-items:center;
   justify-content:center;
-  gap:0.6rem;
+  gap:0.5rem;
   flex-wrap:wrap;
-  margin-top:1rem;
+  margin-top:1.2rem;
   margin-bottom:1rem;
 }
 .lp-sample-label{
-  font-size:0.78rem;
-  color:rgba(255,255,255,0.4);
+  font-size:0.76rem;
+  color:rgba(255,255,255,0.35);
   font-family:'Plus Jakarta Sans',sans-serif;
+  font-weight:400;
 }
 .lp-sample-link{
-  font-size:0.78rem;
-  font-weight:600;
-  color:rgba(255,255,255,0.65);
+  font-size:0.82rem;
+  font-weight:700;
+  color:var(--gold,#C8902A);
   font-family:'Plus Jakarta Sans',sans-serif;
   text-decoration:none;
-  border-bottom:1px solid rgba(255,255,255,0.25);
-  padding-bottom:1px;
+  background:rgba(200,144,42,0.12);
+  border:1px solid rgba(200,144,42,0.3);
+  border-radius:100px;
+  padding:0.3rem 0.85rem;
   transition:all 0.2s;
   cursor:pointer;
 }
 .lp-sample-link:hover{
-  color:var(--gold,#C8902A);
-  border-bottom-color:var(--gold,#C8902A);
+  background:rgba(200,144,42,0.22);
+  border-color:rgba(200,144,42,0.5);
 }
 .lp-sample-div{
-  color:rgba(255,255,255,0.2);
-  font-size:0.78rem;
+  color:rgba(255,255,255,0.15);
+  font-size:0.76rem;
 }
