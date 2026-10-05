@@ -2241,3 +2241,37 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--paper);color:va
   background:var(--ink);color:white;
   border-color:var(--ink);
 }
+
+.lp-sample-row{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:0.6rem;
+  flex-wrap:wrap;
+  margin-top:1rem;
+  margin-bottom:1rem;
+}
+.lp-sample-label{
+  font-size:0.78rem;
+  color:rgba(255,255,255,0.4);
+  font-family:'Plus Jakarta Sans',sans-serif;
+}
+.lp-sample-link{
+  font-size:0.78rem;
+  font-weight:600;
+  color:rgba(255,255,255,0.65);
+  font-family:'Plus Jakarta Sans',sans-serif;
+  text-decoration:none;
+  border-bottom:1px solid rgba(255,255,255,0.25);
+  padding-bottom:1px;
+  transition:all 0.2s;
+  cursor:pointer;
+}
+.lp-sample-link:hover{
+  color:var(--gold,#C8902A);
+  border-bottom-color:var(--gold,#C8902A);
+}
+.lp-sample-div{
+  color:rgba(255,255,255,0.2);
+  font-size:0.78rem;
+}
