@@ -839,6 +839,12 @@ async function openStore(handle) {
     dashBtn.style.display = finalOwner ? 'inline-flex' : 'none';
   }
 
+  // Story card button (owner only)
+  const storyCardBtn = document.getElementById('sv-story-card-btn');
+  if (storyCardBtn) {
+    storyCardBtn.style.display = finalOwner ? 'inline-flex' : 'none';
+  }
+
   // Story edit button
   const storyEditBtn = document.getElementById('sv-story-edit-btn');
   if (storyEditBtn) {
@@ -2171,7 +2177,7 @@ async function drawStoreCard(ctx, qrDataUrl) {
   ctx.font = '400 44px Plus Jakarta Sans, sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.5)';
   ctx.textAlign = 'right';
-  ctx.fillText('nukkad.in/' + (curStore?.handle || ''), CARD_W - 80, CARD_H - 80);
+  ctx.fillText('thenukkad.store/' + (curStore?.handle || ''), CARD_W - 80, CARD_H - 80);
 }
 
 async function drawProductCard(ctx, qrDataUrl) {
@@ -2299,7 +2305,7 @@ async function drawProductCard(ctx, qrDataUrl) {
   ctx.textAlign = 'right';
   // Vertically center URL with QR
   // QR center = CARD_H - 180 - 50 + 90 = CARD_H - 140
-  ctx.fillText('nukkad.in/' + (curStore?.handle || ''), CARD_W - 60, CARD_H - 130);
+  ctx.fillText('thenukkad.store/' + (curStore?.handle || ''), CARD_W - 60, CARD_H - 130);
 }
 
 // Draw QR in bottom left corner
@@ -3477,9 +3483,9 @@ function buildPreview(){
       <div class="pv-link">
         <div>
           <div style="font-size:0.68rem;color:var(--ink-light);margin-bottom:0.12rem">Your store link</div>
-          <div class="pv-link-text">nukkad.in/${h}</div>
+          <div class="pv-link-text">thenukkad.store/${h}</div>
         </div>
-        <button class="pv-copy" onclick="navigator.clipboard?.writeText('nukkad.in/${h}');showToast('Copied! 🔗')">Copy</button>
+        <button class="pv-copy" onclick="navigator.clipboard?.writeText('https://thenukkad.store/?store=${h}');showToast('Copied! 🔗')">Copy</button>
       </div>
       <p style="font-size:0.76rem;color:var(--ink-light);text-align:center">Happy with it? Hit Publish to go live 🚀</p>
     </div>`;
@@ -4332,7 +4338,7 @@ async function loadMyStores(storeWrap) {
         <div onclick="closePanel();openStore('${s.handle}')" style="cursor:pointer;padding:0.85rem 1rem;background:var(--paper-deep);border-radius:var(--radius-sm);margin-bottom:0.5rem;display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border-light);">
           <div>
             <div style="font-weight:700;font-size:0.9rem;color:var(--ink)">${s.brand_name}</div>
-            <div style="font-size:0.75rem;color:var(--earth);margin-top:0.1rem">nukkad.in/${s.handle}</div>
+            <div style="font-size:0.75rem;color:var(--earth);margin-top:0.1rem">thenukkad.store/${s.handle}</div>
           </div>
           <span style="color:var(--ink-light)">→</span>
         </div>`).join('');
