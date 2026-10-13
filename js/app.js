@@ -2,7 +2,7 @@
 // APP VERSION — increment this by 1
 // every time you deploy to Netlify
 // ═══════════════════════════════════
-const APP_VERSION = '1.0';
+const APP_VERSION = '1.0.1';
 
 // ═══════════════════════════════════
 // ADMIN CONFIG

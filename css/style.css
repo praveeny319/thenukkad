@@ -587,10 +587,10 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--paper);color:va
 .sv-prod-card:hover{transform:translateY(-6px);box-shadow:0 4px 16px rgba(139,109,80,0.12),0 16px 48px rgba(139,109,80,0.1);border-color:rgba(200,144,42,0.25);}
 
 /* Photo takes majority of card — this is the money shot */
-.sv-prod-img{height:220px;background:var(--paper-deep);display:flex;align-items:center;justify-content:center;font-size:3.5rem;overflow:hidden;position:relative;flex-shrink:0;}
-@media(max-width:600px){.sv-prod-img{height:260px;}}
+.sv-prod-img{aspect-ratio:4/3;width:100%;background:var(--paper-deep);display:flex;align-items:center;justify-content:center;font-size:3.5rem;overflow:hidden;position:relative;flex-shrink:0;}
+@media(max-width:600px){.sv-prod-img{aspect-ratio:4/3;}}
 .sv-prod-img .img-blur-bg{position:absolute;inset:-20px;background-size:cover;background-position:center;filter:blur(18px) brightness(0.75) saturate(1.2);transform:scale(1.1);z-index:0;}
-.sv-prod-img img{position:relative;z-index:1;width:100%;height:100%;object-fit:contain;transition:transform 0.4s ease;padding:4px;}
+.sv-prod-img img{position:relative;z-index:1;width:100%;height:100%;object-fit:cover;transition:transform 0.4s ease;}
 .sv-prod-card:hover .sv-prod-img img{transform:scale(1.03);}
 .sv-prod-badge{position:absolute;top:0.5rem;left:0.5rem;background:rgba(26,15,10,0.65);backdrop-filter:blur(4px);color:white;font-size:0.62rem;font-weight:700;padding:0.18rem 0.5rem;border-radius:100px;}
 
