@@ -1,10 +1,4 @@
 // ═══════════════════════════════════
-// APP VERSION — increment this by 1
-// every time you deploy to Netlify
-// ═══════════════════════════════════
-const APP_VERSION = '1.0.1';
-
-// ═══════════════════════════════════
 // ADMIN CONFIG
 // Only this email sees the admin panel
 // ═══════════════════════════════════
@@ -21,27 +15,6 @@ let _adminEditHandle = null;
 function adminIsOwner(handle) {
   return isAdmin() && _adminEditHandle === handle;
 }
-
-(function() {
-  const storedVersion = localStorage.getItem('nukkad_app_version');
-  if (storedVersion !== APP_VERSION) {
-    // New version detected — clear URL state and go home
-    localStorage.setItem('nukkad_app_version', APP_VERSION);
-    localStorage.removeItem('nukkad_last_page');
-    const url = new URL(window.location.href);
-    // Only strip internal navigation params (page=)
-    // NEVER strip store/product/customer params —
-    // those are shared links from outside the app
-    const hasInternalParams =
-      url.searchParams.has('page');
-    if (hasInternalParams &&
-        !url.searchParams.has('store') &&
-        !url.searchParams.has('customer')) {
-      window.history.replaceState({page:'home'}, '',
-        window.location.pathname);
-    }
-  }
-})();
 
 // ═══════════════════════════════════
 // SUPABASE
