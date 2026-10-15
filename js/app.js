@@ -1242,15 +1242,21 @@ let _editExtraPhotos = [];   // saved URLs
 let _editExtraFiles  = [];   // pending File objects
 let _editExtraSlot   = -1;
 
+// Main photo + this many extras = max photos per product
+const MAX_EXTRA_PHOTOS = 1;
+
 function renderExtraPhotosGrid(images) {
   _editExtraPhotos = [...(images || [])];
   const grid = document.getElementById(
     'ep-extra-photos');
   if (!grid) return;
-  const maxExtra = 5;
+  // Older products may already have more extras than
+  // the limit — keep showing them, just no empty slot
+  const slotCount = Math.max(
+    MAX_EXTRA_PHOTOS, _editExtraPhotos.length);
   grid.innerHTML = '';
 
-  for (let i = 0; i < maxExtra; i++) {
+  for (let i = 0; i < slotCount; i++) {
     const slot = document.createElement('div');
     slot.style.cssText = `
       aspect-ratio:1;border-radius:8px;
@@ -1292,17 +1298,27 @@ function renderExtraPhotosGrid(images) {
 
 function removeExtraPhoto(idx) {
   _editExtraPhotos.splice(idx, 1);
+  _editExtraFiles.splice(idx, 1);
   renderExtraPhotosGrid(_editExtraPhotos);
+}
+
+function extraPhotosFull() {
+  if (_editExtraPhotos.filter(Boolean).length <
+      MAX_EXTRA_PHOTOS) return false;
+  showToast('Maximum 2 photos allowed per product');
+  return true;
 }
 
 function handleExtraPhotoUpload(event) {
   const file = event.target.files[0];
   if (!file) return;
   event.target.value = '';
+  if (extraPhotosFull()) return;
   const reader = new FileReader();
   reader.onload = (e) => {
+    if (extraPhotosFull()) return;
     if (_editExtraSlot >= 0 &&
-        _editExtraSlot < 5) {
+        _editExtraSlot < MAX_EXTRA_PHOTOS) {
       _editExtraFiles[_editExtraSlot] = file;
       _editExtraPhotos[_editExtraSlot] =
         e.target.result;
