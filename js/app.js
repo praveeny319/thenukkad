@@ -1201,6 +1201,8 @@ async function resetCoverPhotos() {
 
 function openEditProduct(e, handle, productId) {
   e.stopPropagation();
+  const saveBtn = document.getElementById('epm-save-btn');
+  saveBtn.textContent = 'Save'; saveBtn.disabled = false;
   const store = allStores.find(s => s.handle === handle);
   if (!store) return;
   const product = (store.products || []).find(p => String(p.id) === String(productId));
@@ -1317,6 +1319,19 @@ function closeEditProduct() {
   document.getElementById('edit-prod-modal').classList.remove('open');
 }
 
+// Rejects if a network call takes longer than ms,
+// so a stalled upload can't leave Save stuck forever
+function withTimeout(promise, ms = 60000) {
+  let timer;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      timer = setTimeout(
+        () => reject(new Error('Request timed out')), ms);
+    })
+  ]).finally(() => clearTimeout(timer));
+}
+
 async function saveEditProduct() {
   const productId = document.getElementById('epm-prod-id').value;
   const handle = document.getElementById('epm-handle').value;
@@ -1365,9 +1380,9 @@ async function saveEditProduct() {
 
       const fileName = `products/${handle}_${productId}_${Date.now()}.jpg`;
 
-      const { error: upErr } = await sb.storage
+      const { error: upErr } = await withTimeout(sb.storage
         .from('product-images')
-        .upload(fileName, fileToUpload, { upsert: true });
+        .upload(fileName, fileToUpload, { upsert: true }));
 
       if (upErr) {
         console.error('Image upload error:', upErr);
@@ -1398,10 +1413,10 @@ async function saveEditProduct() {
           const fileName =
             `products/${handle}_extra_` +
             `${productId}_${i}_${Date.now()}.jpg`;
-          const { error: upErr } = await sb.storage
+          const { error: upErr } = await withTimeout(sb.storage
             .from('product-images')
             .upload(fileName, processed,
-              { upsert: true });
+              { upsert: true }));
           if (upErr) throw upErr;
           const { data: urlData } = sb.storage
             .from('product-images')
@@ -1426,10 +1441,10 @@ async function saveEditProduct() {
     if (image_url) updates.image_url = image_url;
 
     // Save to Supabase
-    const { error } = await sb
+    const { error } = await withTimeout(sb
       .from('products')
       .update(updates)
-      .eq('id', productId);
+      .eq('id', productId));
 
     if (error) {
       console.error('Product update error:', error);
