@@ -581,7 +581,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--paper);color:va
 .sv-section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;}
 .sv-section-title{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:700;color:var(--ink);letter-spacing:-0.2px;}
 .sv-products-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1.2rem;}
-@media(max-width:600px){.sv-products-grid{grid-template-columns:1fr;gap:1rem;}}
+@media(max-width:600px){.sv-products-grid{grid-template-columns:repeat(2,1fr);gap:0.6rem;}}
 
 .sv-prod-card{background:var(--paper-warm);border:1px solid rgba(200,160,100,0.15);border-radius:16px;overflow:hidden;transition:all 0.3s cubic-bezier(0.25,0.46,0.45,0.94);cursor:pointer;display:flex;flex-direction:column;box-shadow:0 2px 8px rgba(139,109,80,0.06),0 8px 24px rgba(139,109,80,0.04);}
 .sv-prod-card:hover{transform:translateY(-6px);box-shadow:0 4px 16px rgba(139,109,80,0.12),0 16px 48px rgba(139,109,80,0.1);border-color:rgba(200,144,42,0.25);}
