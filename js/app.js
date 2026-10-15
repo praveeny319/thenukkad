@@ -96,10 +96,9 @@ const SEEDS = [
     created_at timestamptz default now()
   );
 
-  alter table orders enable row level security;
-  create policy "Anyone can insert orders" on orders for insert with check (true);
-  create policy "Store owner can view orders" on orders for select using (true);
-  create policy "Store owner can update orders" on orders for update using (true);
+  Row-level security: see supabase/security.sql.
+  Never use "using (true)" policies here: they make
+  every buyer's name and phone number public.
 */
 
 /*
@@ -127,6 +126,35 @@ const SEEDS = [
   ADD COLUMN IF NOT EXISTS is_hidden
   BOOLEAN DEFAULT false;
 */
+
+// ═══════════════════════════════════
+// HTML SAFETY
+// Anything typed by a buyer or seller must go
+// through these before it is put into innerHTML.
+// ═══════════════════════════════════
+function esc(v) {
+  return String(v ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Only http(s), uploaded-preview (data:/blob:) image URLs
+function safeUrl(u) {
+  const s = String(u ?? '').trim();
+  return /^(https?:|data:image\/|blob:)/i.test(s) ? esc(s) : '';
+}
+
+// For url('...') inside a style attribute
+function cssUrl(u) {
+  return safeUrl(u).replace(/&#39;/g, '%27')
+    .replace(/\(/g, '%28').replace(/\)/g, '%29');
+}
+
+// A JS string argument inside an onclick="..." attribute
+function jsArg(v) {
+  return esc(JSON.stringify(String(v ?? '')));
+}
 
 // Always format Indian numbers for wa.me (+91)
 function waPhone(raw) {
@@ -368,12 +396,12 @@ async function loadCustomerProfile(profileId) {
           });
           return `<div class="oh-card">
             <div class="oh-left">
-              <div class="oh-product">${o.product_name}</div>
-              <div class="oh-store">from ${o.store_name}</div>
-              <div class="oh-price">₹${o.product_price}</div>
+              <div class="oh-product">${esc(o.product_name)}</div>
+              <div class="oh-store">from ${esc(o.store_name)}</div>
+              <div class="oh-price">₹${esc(o.product_price)}</div>
               <div class="oh-date">${date}</div>
             </div>
-            <span class="oh-status ${o.status}">${
+            <span class="oh-status ${esc(o.status)}">${
               o.status === 'accepted' ? '✓ Confirmed' :
               o.status === 'declined' ? 'Declined' : 'Pending'
             }</span>
@@ -418,12 +446,12 @@ async function loadMyOrders() {
         });
         return `<div class="oh-card">
           <div class="oh-left">
-            <div class="oh-product">${o.product_name}</div>
-            <div class="oh-store">from ${o.store_name}</div>
-            <div class="oh-price">₹${o.product_price}</div>
+            <div class="oh-product">${esc(o.product_name)}</div>
+            <div class="oh-store">from ${esc(o.store_name)}</div>
+            <div class="oh-price">₹${esc(o.product_price)}</div>
             <div class="oh-date">${date}</div>
           </div>
-          <span class="oh-status ${o.status}">${
+          <span class="oh-status ${esc(o.status)}">${
             o.status === 'accepted' ? '✓ Confirmed' :
             o.status === 'declined' ? 'Declined' : 'Pending'
           }</span>
@@ -528,7 +556,7 @@ function openPanel() {
   document.getElementById('pp-av').textContent = initial;
   const ppAv = document.getElementById('pp-av');
   if (saved.avatar_url) {
-    ppAv.innerHTML = `<img src="${saved.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+    ppAv.innerHTML = `<img src="${safeUrl(saved.avatar_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
   }
   const ppUploadBtn = document.getElementById('pp-avatar-upload-btn');
   if (ppUploadBtn) ppUploadBtn.style.display = 'flex';
@@ -594,14 +622,14 @@ function renderMarket(stores) {
     const bgColors = BG[s.bg_idx ?? 0];
     const bg = `linear-gradient(145deg, ${bgColors[0]}, ${bgColors[1]}, ${bgColors[2]}, ${bgColors[3]})`;
     const n = (s.products || []).length;
-    return `<div class="store-card" onclick="openStore('${s.handle}')">
-      <div class="sc-cover" style="background:${bg}"><div class="sc-avatar">${s.emoji}</div></div>
+    return `<div class="store-card" onclick="openStore(${jsArg(s.handle)})">
+      <div class="sc-cover" style="background:${bg}"><div class="sc-avatar">${esc(s.emoji)}</div></div>
       <div class="sc-body">
-        <div class="sc-name">${s.brand_name}</div>
-        <div class="sc-tagline">${s.tagline}</div>
+        <div class="sc-name">${esc(s.brand_name)}</div>
+        <div class="sc-tagline">${esc(s.tagline)}</div>
         <div class="sc-tags">
-          <span class="sc-tag">${s.category}</span>
-          ${s.city ? `<span class="sc-tag">📍 ${s.city}</span>` : ''}
+          <span class="sc-tag">${esc(s.category)}</span>
+          ${s.city ? `<span class="sc-tag">📍 ${esc(s.city)}</span>` : ''}
         </div>
         <div class="sc-prods">🛍️ ${n} product${n !== 1 ? 's' : ''}</div>
         <div class="sc-wa-badge">💬 Orders via WhatsApp</div>
@@ -695,7 +723,7 @@ async function openStore(handle) {
   // Avatar + name + location
   const avEl = document.getElementById('sv-av');
   if (s.logo_url) {
-    avEl.innerHTML = `<img src="${s.logo_url}" alt="${s.brand_name}">`;
+    avEl.innerHTML = `<img src="${safeUrl(s.logo_url)}" alt="${esc(s.brand_name)}">`;
   } else {
     avEl.textContent = s.emoji;
   }
@@ -745,20 +773,19 @@ async function openStore(handle) {
 
   document.getElementById('sv-prod-grid').innerHTML = prods.map((p,i) => {
     const pId = p.id || `seed_${i}`;
-    const safeName = p.name.replace(/'/g,"\\'");
     const imgHtml = p.image_url
-      ? `<div class="sv-prod-img"><div class="img-blur-bg" style="background-image:url('${p.image_url}')"></div><img src="${p.image_url}" alt="${p.name}" loading="lazy"></div>`
-      : `<div class="sv-prod-img" style="font-size:3rem;">${s.emoji}</div>`;
-    return `<div class="sv-prod-card" onclick="openProductDetail('${handle}','${pId}')" style="${p.is_hidden && finalOwner ? 'opacity:0.45;' : ''}">
+      ? `<div class="sv-prod-img"><div class="img-blur-bg" style="background-image:url('${cssUrl(p.image_url)}')"></div><img src="${safeUrl(p.image_url)}" alt="${esc(p.name)}" loading="lazy"></div>`
+      : `<div class="sv-prod-img" style="font-size:3rem;">${esc(s.emoji)}</div>`;
+    return `<div class="sv-prod-card" onclick="openProductDetail(${jsArg(handle)},${jsArg(pId)})" style="${p.is_hidden && finalOwner ? 'opacity:0.45;' : ''}">
       ${imgHtml}
       <div class="sv-prod-body">
-        <div class="sv-prod-name">${p.name}</div>
-        <div class="sv-prod-desc">${p.description || ''}</div>
+        <div class="sv-prod-name">${esc(p.name)}</div>
+        <div class="sv-prod-desc">${esc(p.description)}</div>
         <div class="sv-prod-footer">
-          <span class="sv-prod-price">₹${p.price}</span>
+          <span class="sv-prod-price">₹${esc(p.price)}</span>
           ${finalOwner
-            ? `<button class="sv-edit-btn" onclick="openEditProduct(event,'${handle}','${pId}')">✏️ Edit</button>`
-            : `<div style="display:flex;gap:0.35rem;"><button class="sv-wa-btn" onclick="orderWA(event,'${safeName}','${p.price}')">Order</button><button class="sv-cart-btn" id="cart-btn-${pId}" data-product-name="${safeName}" onclick="addToCart(event,${JSON.stringify(p).replace(/"/g,'&quot;')},'${handle}')">+ Cart</button></div>`
+            ? `<button class="sv-edit-btn" onclick="openEditProduct(event,${jsArg(handle)},${jsArg(pId)})">✏️ Edit</button>`
+            : `<div style="display:flex;gap:0.35rem;"><button class="sv-wa-btn" onclick="orderWA(event,${jsArg(p.name)},${jsArg(p.price)})">Order</button><button class="sv-cart-btn" id="cart-btn-${esc(pId)}" data-product-name="${esc(p.name)}" onclick="addToCart(event,${esc(JSON.stringify(p))},${jsArg(handle)})">+ Cart</button></div>`
           }
         </div>
       </div>
@@ -891,8 +918,8 @@ async function handleAvatarUpload(event) {
     if (updateError) throw updateError;
     curStore.logo_url = logoUrl;
     const avEl = document.getElementById('sv-av');
-    avEl.innerHTML = `<img src="${logoUrl}"
-          alt="${curStore.brand_name}"
+    avEl.innerHTML = `<img src="${safeUrl(logoUrl)}"
+          alt="${esc(curStore.brand_name)}"
           style="width:100%;height:100%;
                  object-fit:cover;
                  border-radius:50%;">`;
@@ -1062,7 +1089,7 @@ function renderCoverPhotoGrid() {
 
     if (url) {
       slot.innerHTML = `
-        <img src="${url}" alt="Cover photo">
+        <img src="${safeUrl(url)}" alt="Cover photo">
         <div class="cover-slot-actions">
           <button class="cover-slot-rep"
                   onclick="replaceCoverSlot(${i})"
@@ -1186,7 +1213,7 @@ function openEditProduct(e, handle, productId) {
 
   const curImgEl = document.getElementById('ep-current-img');
   curImgEl.innerHTML = product.image_url
-    ? `<img src="${product.image_url}"
+    ? `<img src="${safeUrl(product.image_url)}"
             style="width:100%;max-height:140px;
                    object-fit:cover;">`
     : '';
@@ -1235,7 +1262,7 @@ function renderExtraPhotosGrid(images) {
     const url = _editExtraPhotos[i];
     if (url) {
       slot.innerHTML = `
-        <img src="${url}"
+        <img src="${safeUrl(url)}"
              style="width:100%;height:100%;
                     object-fit:cover;">
         <button onclick="removeExtraPhoto(${i})"
@@ -1527,7 +1554,7 @@ function previewEditImage(event) {
   const reader = new FileReader();
   reader.onload = (e) => {
     document.getElementById('ep-current-img').innerHTML =
-      `<img src="${e.target.result}"
+      `<img src="${safeUrl(e.target.result)}"
             style="width:100%;max-height:140px;
                    object-fit:contain;border-radius:10px;
                    background:var(--paper-deep);">`;
@@ -1700,27 +1727,27 @@ async function loadAdminData() {
       storesEl.innerHTML = storeList.map(s => {
         const storeOrders = orderList.filter(o => o.store_handle === s.handle);
         return `<div class="adm-store-row">
-          <div class="adm-store-emoji">${s.emoji || '🏪'}</div>
+          <div class="adm-store-emoji">${esc(s.emoji || '🏪')}</div>
           <div class="adm-store-info">
-            <div class="adm-store-name">${s.brand_name}</div>
+            <div class="adm-store-name">${esc(s.brand_name)}</div>
             <div class="adm-store-meta">
-              <span>@${s.handle}</span>
+              <span>@${esc(s.handle)}</span>
               <span>·</span>
-              <span>${s.category || '—'}</span>
+              <span>${esc(s.category || '—')}</span>
               <span>·</span>
-              <span>${s.city || '—'}</span>
+              <span>${esc(s.city || '—')}</span>
               <span>·</span>
               <span>${storeOrders.length} orders</span>
             </div>
           </div>
           <div class="adm-store-actions">
             <button class="adm-view-btn"
-                    onclick="adminOpenStore('${s.handle}')">
+                    onclick="adminOpenStore(${jsArg(s.handle)})">
               View
             </button>
             <button class="adm-view-btn"
                     style="background:var(--earth);"
-                    onclick="adminEditStore('${s.handle}')">
+                    onclick="adminEditStore(${jsArg(s.handle)})">
               Edit
             </button>
           </div>
@@ -1741,16 +1768,16 @@ async function loadAdminData() {
           });
           return `<div class="adm-order-row">
             <div class="adm-order-info">
-              <div class="adm-order-product">${o.product_name}</div>
+              <div class="adm-order-product">${esc(o.product_name)}</div>
               <div class="adm-order-meta">
-                Store: ${o.store_name} ·
-                Buyer: ${o.buyer_name} ·
-                📞 ${o.buyer_phone}<br>
-                ₹${o.product_price} · ${date}
+                Store: ${esc(o.store_name)} ·
+                Buyer: ${esc(o.buyer_name)} ·
+                📞 ${esc(o.buyer_phone)}<br>
+                ₹${esc(o.product_price)} · ${date}
               </div>
             </div>
-            <span class="adm-order-status ${o.status}">
-              ${o.status}
+            <span class="adm-order-status ${esc(o.status)}">
+              ${esc(o.status)}
             </span>
           </div>`;
         }).join('');
@@ -1764,13 +1791,13 @@ async function loadAdminData() {
       usersEl.innerHTML = userList.map(u => {
         const initial = u.name ? u.name.charAt(0).toUpperCase() : '?';
         return `<div class="adm-user-row">
-          <div class="adm-user-av">${initial}</div>
+          <div class="adm-user-av">${esc(initial)}</div>
           <div class="adm-user-info">
-            <div class="adm-user-name">${u.name || 'Unknown'}</div>
+            <div class="adm-user-name">${esc(u.name || 'Unknown')}</div>
             <div class="adm-user-meta">
-              ${u.email || '—'} ·
-              ${u.phone || '—'} ·
-              ${[u.area,u.city].filter(Boolean).join(', ') || '—'}
+              ${esc(u.email || '—')} ·
+              ${esc(u.phone || '—')} ·
+              ${esc([u.area,u.city].filter(Boolean).join(', ') || '—')}
             </div>
           </div>
         </div>`;
@@ -1832,7 +1859,7 @@ async function handleProfilePhotoUpload(event) {
   localStorage.setItem('nukkad_user', JSON.stringify(saved));
 
   const ppAv = document.getElementById('pp-av');
-  if (ppAv) ppAv.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+  if (ppAv) ppAv.innerHTML = `<img src="${safeUrl(url)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
 
   showToast('Profile photo updated!');
   event.target.value = '';
@@ -1905,21 +1932,21 @@ function renderOrderCard(order, showActions) {
   });
   const location = [order.buyer_area, order.buyer_city].filter(Boolean).join(', ');
 
-  return `<div class="dash-order-card" id="order-${order.id}">
+  return `<div class="dash-order-card" id="order-${esc(order.id)}">
     <div class="dash-order-info">
-      <div class="dash-order-product">${order.product_name}</div>
-      <div class="dash-order-price">₹${order.product_price}</div>
+      <div class="dash-order-product">${esc(order.product_name)}</div>
+      <div class="dash-order-price">₹${esc(order.product_price)}</div>
       <div class="dash-order-buyer">
-        👤 ${order.buyer_name}<br>
-        📞 ${order.buyer_phone}
-        ${location ? `<br>📍 ${location}` : ''}
+        👤 ${esc(order.buyer_name)}<br>
+        📞 ${esc(order.buyer_phone)}
+        ${location ? `<br>📍 ${esc(location)}` : ''}
       </div>
       <div class="dash-order-time">${time}</div>
     </div>
     <div class="dash-order-actions">
       ${showActions
-        ? `<button class="dash-accept-btn" onclick="updateOrder('${order.id}','accepted')">✓ Accept</button>
-           <button class="dash-decline-btn" onclick="updateOrder('${order.id}','declined')">Decline</button>`
+        ? `<button class="dash-accept-btn" onclick="updateOrder(${jsArg(order.id)},'accepted')">✓ Accept</button>
+           <button class="dash-decline-btn" onclick="updateOrder(${jsArg(order.id)},'declined')">Decline</button>`
         : `<span class="dash-status-badge accepted">✓ Accepted</span>`
       }
     </div>
@@ -2439,7 +2466,7 @@ function openProductDetail(handle, productId) {
     'pd-store-pill-name');
   if (s.logo_url) {
     pillAv.innerHTML =
-      `<img src="${s.logo_url}" alt="${s.brand_name}">`;
+      `<img src="${safeUrl(s.logo_url)}" alt="${esc(s.brand_name)}">`;
   } else {
     pillAv.textContent = s.emoji || '🌿';
   }
@@ -2480,7 +2507,7 @@ function openProductDetail(handle, productId) {
       heroImg.style.display = 'none';
       hero.innerHTML =
         `<div class="pd-hero-placeholder">
-          ${s.emoji || '🌿'}
+          ${esc(s.emoji || '🌿')}
         </div>`;
     }
 
@@ -2506,7 +2533,7 @@ function openProductDetail(handle, productId) {
     thumbsEl.style.display = 'flex';
     thumbsEl.innerHTML = allImgs.map((url, i) =>
       `<img class="pd-thumb ${i===0?'active':''}"
-            src="${url}"
+            src="${safeUrl(url)}"
             onclick="pdShowImage(${i})">`
     ).join('');
   } else {
@@ -2555,7 +2582,7 @@ function openProductDetail(handle, productId) {
   const avEl = document.getElementById('pd-seller-av');
   if (s.logo_url) {
     avEl.innerHTML =
-      `<img src="${s.logo_url}" alt="${s.brand_name}">`;
+      `<img src="${safeUrl(s.logo_url)}" alt="${esc(s.brand_name)}">`;
   } else {
     avEl.textContent = s.emoji || '🌿';
   }
@@ -3049,18 +3076,18 @@ function renderCartItems() {
   container.innerHTML = _cart.map(item => {
     const imgHtml = item.product.image_url
       ? `<div class="cart-item-img">
-           <img src="${item.product.image_url}"
-                alt="${item.product.name}">
+           <img src="${safeUrl(item.product.image_url)}"
+                alt="${esc(item.product.name)}">
          </div>`
       : `<div class="cart-item-img">
-           ${curStore?.emoji || '🛍️'}
+           ${esc(curStore?.emoji || '🛍️')}
          </div>`;
 
     return `<div class="cart-item">
       ${imgHtml}
       <div class="cart-item-info">
         <div class="cart-item-name">
-          ${item.product.name}
+          ${esc(item.product.name)}
         </div>
         <div class="cart-item-price">
           ₹${(parseFloat(item.product.price) *
@@ -3070,7 +3097,7 @@ function renderCartItems() {
                color:var(--ink-light);
                font-family:'Plus Jakarta Sans',
                sans-serif;">
-               (₹${item.product.price} × ${item.qty})
+               (₹${esc(item.product.price)} × ${item.qty})
                </span>`
             : ''}
         </div>
@@ -3078,7 +3105,7 @@ function renderCartItems() {
       <div class="cart-item-qty">
         <button class="cart-qty-btn"
                 onclick="updateQty(
-                  '${item.product.name}', -1)">
+                  ${jsArg(item.product.name)}, -1)">
           −
         </button>
         <span class="cart-qty-num">
@@ -3086,7 +3113,7 @@ function renderCartItems() {
         </span>
         <button class="cart-qty-btn"
                 onclick="updateQty(
-                  '${item.product.name}', 1)">
+                  ${jsArg(item.product.name)}, 1)">
           +
         </button>
       </div>
@@ -3392,25 +3419,25 @@ function buildPreview(){
   NS.handle=h;
   const prodsH=NSProducts.map(p=>`
     <div class="pv-prod">
-      <div class="pv-prod-img">${p.previewSrc ? `<img src="${p.previewSrc}" alt="${p.name}">` : NS.emoji}</div>
+      <div class="pv-prod-img">${p.previewSrc ? `<img src="${safeUrl(p.previewSrc)}" alt="${esc(p.name)}">` : esc(NS.emoji)}</div>
       <div class="pv-prod-body">
-        <div class="pv-prod-name">${p.name}</div>
-        <div class="pv-prod-desc">${p.description||'Quality product.'}</div>
-        <div class="pv-prod-price">₹${p.price}</div>
+        <div class="pv-prod-name">${esc(p.name)}</div>
+        <div class="pv-prod-desc">${esc(p.description||'Quality product.')}</div>
+        <div class="pv-prod-price">₹${esc(p.price)}</div>
       </div>
     </div>`).join('');
   document.getElementById('pv-content').innerHTML=`
     <div class="pv-cover" style="background:${bg}"></div>
     <div class="pv-body">
       <div class="pv-av-row">
-        <div class="pv-av">${NS.emoji}</div>
+        <div class="pv-av">${esc(NS.emoji)}</div>
         <span style="font-size:0.7rem;color:var(--ink-light);background:var(--paper-deep);padding:0.22rem 0.65rem;border-radius:100px;border:1px solid var(--border);margin-top:1.2rem">Preview</span>
       </div>
-      <div class="pv-name serif">${NS.brand_name}</div>
-      <div class="pv-tagline">${NS.tagline}</div>
+      <div class="pv-name serif">${esc(NS.brand_name)}</div>
+      <div class="pv-tagline">${esc(NS.tagline)}</div>
       <div class="pv-badges">
-        <span class="pv-badge">${NS.category}</span>
-        ${NS.city?`<span class="pv-badge">📍 ${NS.city}</span>`:''}
+        <span class="pv-badge">${esc(NS.category)}</span>
+        ${NS.city?`<span class="pv-badge">📍 ${esc(NS.city)}</span>`:''}
         <span class="pv-badge">✓ Verified</span>
         <span class="pv-badge">💬 WhatsApp orders</span>
       </div>
@@ -4270,10 +4297,10 @@ async function loadMyStores(storeWrap) {
     }
     if (myList.length > 0) {
       storeWrap.innerHTML = myList.map(s => `
-        <div onclick="closePanel();openStore('${s.handle}')" style="cursor:pointer;padding:0.85rem 1rem;background:var(--paper-deep);border-radius:var(--radius-sm);margin-bottom:0.5rem;display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border-light);">
+        <div onclick="closePanel();openStore(${jsArg(s.handle)})" style="cursor:pointer;padding:0.85rem 1rem;background:var(--paper-deep);border-radius:var(--radius-sm);margin-bottom:0.5rem;display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border-light);">
           <div>
-            <div style="font-weight:700;font-size:0.9rem;color:var(--ink)">${s.brand_name}</div>
-            <div style="font-size:0.75rem;color:var(--earth);margin-top:0.1rem">thenukkad.store/${s.handle}</div>
+            <div style="font-weight:700;font-size:0.9rem;color:var(--ink)">${esc(s.brand_name)}</div>
+            <div style="font-size:0.75rem;color:var(--earth);margin-top:0.1rem">thenukkad.store/${esc(s.handle)}</div>
           </div>
           <span style="color:var(--ink-light)">→</span>
         </div>`).join('');
