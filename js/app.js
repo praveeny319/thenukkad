@@ -2517,101 +2517,6 @@ function openProductDetail(handle, productId) {
     ([s.area, s.city].filter(Boolean).join(', ') ||
     'India');
 
-  // ── Feature icons by category ──
-  const featureMap = {
-    'Hair & Skincare':[
-      {icon:'🌿',title:'Natural Ingredients',
-        sub:'No harsh chemicals'},
-      {icon:'🏠',title:'Handcrafted',
-        sub:'Small batch made'},
-      {icon:'✅',title:'Skin Safe',
-        sub:'All skin types'},
-      {icon:'💚',title:'Cruelty Free',
-        sub:'Never tested on animals'},
-    ],
-    'Home-cooked Food':[
-      {icon:'🏠',title:'Home Cooked',
-        sub:'Made with love at home'},
-      {icon:'🌿',title:'No Preservatives',
-        sub:'Fresh & natural'},
-      {icon:'⚡',title:'Fresh Daily',
-        sub:'Prepared fresh daily'},
-      {icon:'🚚',title:'Quick Delivery',
-        sub:'WhatsApp to confirm'},
-    ],
-    'Baked Goods':[
-      {icon:'🏠',title:'Home Baked',
-        sub:'Fresh from scratch'},
-      {icon:'🥚',title:'Quality Ingredients',
-        sub:'Only the best used'},
-      {icon:'🎂',title:'Custom Orders',
-        sub:'Made just for you'},
-      {icon:'📦',title:'Safe Packaging',
-        sub:'Packed with care'},
-    ],
-    'Handmade Clothing':[
-      {icon:'✋',title:'Handmade',
-        sub:'Crafted with care'},
-      {icon:'🎨',title:'Custom Designs',
-        sub:'Made to your taste'},
-      {icon:'📏',title:'Custom Sizing',
-        sub:'Perfect fit guaranteed'},
-      {icon:'🌿',title:'Quality Fabric',
-        sub:'Premium materials'},
-    ],
-    'Home Decor':[
-      {icon:'✋',title:'Handcrafted',
-        sub:'Made by artisans'},
-      {icon:'🎨',title:'Unique Pieces',
-        sub:'No two alike'},
-      {icon:'📦',title:'Safe Packaging',
-        sub:'Delivered safely'},
-      {icon:'🏆',title:'Premium Quality',
-        sub:'Built to last'},
-    ],
-    'Jewellery':[
-      {icon:'💎',title:'Premium Quality',
-        sub:'Carefully crafted'},
-      {icon:'✋',title:'Handmade',
-        sub:'Artisan crafted'},
-      {icon:'📦',title:'Gift Ready',
-        sub:'Beautiful packaging'},
-      {icon:'✅',title:'Skin Safe',
-        sub:'No allergic materials'},
-    ],
-    'Herbal Products':[
-      {icon:'🌿',title:'100% Natural',
-        sub:'Pure ingredients'},
-      {icon:'🏠',title:'Homemade',
-        sub:'Traditional recipes'},
-      {icon:'✅',title:'Chemical Free',
-        sub:'No artificial additives'},
-      {icon:'💚',title:'Eco Friendly',
-        sub:'Good for the planet'},
-    ],
-  };
-
-  // Default features for any other category
-  const features = featureMap[s.category] || [
-    {icon:'🏆',title:'Premium Quality',
-      sub:'Carefully selected & inspected'},
-    {icon:'📸',title:'Highly Detailed',
-      sub:'Realistic finish inside out'},
-    {icon:'📦',title:'Secure Packaging',
-      sub:'Safe delivery with extra protection'},
-    {icon:'🚚',title:'Pan India Shipping',
-      sub:'Fast & reliable delivery'},
-  ];
-
-  document.getElementById('pd-features').innerHTML =
-    features.map(f => `
-      <div class="pd-feature">
-        <div class="pd-feature-icon">${f.icon}</div>
-        <div class="pd-feature-title">${f.title}</div>
-        <div class="pd-feature-sub">${f.sub}</div>
-      </div>
-    `).join('');
-
   // ── Description + specs ──
   const descSection = document.getElementById(
     'pd-desc-section');
@@ -2626,17 +2531,24 @@ function openProductDetail(handle, productId) {
   }
   specsEl.innerHTML = '';
 
-  // ── Trust strip ──
-  document.getElementById('pd-trust-strip')
-    .innerHTML = `
-    <div class="pd-trust-item">
-      <span>🔒</span> Safe & Secure Transaction
-    </div>
-    <span style="color:var(--border)">|</span>
-    <div class="pd-trust-item">
-      <span>🔄</span> Easy Returns
-    </div>
-  `;
+  // ── Seller info (only fields the seller filled) ──
+  const sellerInfo = [
+    ['📍 Ships to: ', s.delivery_areas],
+    ['🕐 Delivery: ', s.delivery_time],
+    ['🔄 Returns: ', s.return_policy],
+    ['💳 Payment: ', s.payment_methods],
+  ].filter(([, v]) => v && String(v).trim());
+  const sellerInfoRows = document.getElementById(
+    'pd-seller-terms-rows');
+  sellerInfoRows.innerHTML = '';
+  sellerInfo.forEach(([label, value]) => {
+    const row = document.createElement('div');
+    row.className = 'sv-seller-info-row';
+    row.textContent = label + String(value).trim();
+    sellerInfoRows.appendChild(row);
+  });
+  document.getElementById('pd-seller-terms')
+    .style.display = sellerInfo.length ? 'block' : 'none';
 
   // ── Buttons ──
   document.getElementById('pd-wa-btn').onclick = () => {

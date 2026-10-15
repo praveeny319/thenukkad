@@ -26,7 +26,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<link rel="stylesheet" href="css/style.css?v=4">
+<link rel="stylesheet" href="css/style.css?v=5">
 </head>
 <body>
 
@@ -718,18 +718,11 @@
       <div class="pd-seller-info">
         <div class="pd-seller-name">
           <span id="pd-seller-name"></span>
-          <span class="pd-verified-tick">✔</span>
         </div>
         <div class="pd-seller-loc"
              id="pd-seller-loc"></div>
       </div>
-      <div class="pd-verified">
-        ✓ Verified Seller
-      </div>
     </div>
-
-    <!-- Feature icons -->
-    <div class="pd-features" id="pd-features"></div>
 
     <!-- Description + specs -->
     <div class="pd-desc-section"
@@ -746,9 +739,15 @@
     <!-- Spacer for fixed CTAs -->
     <div style="height:20px;"></div>
 
-    <!-- Trust strip -->
-    <div class="pd-trust-strip"
-         id="pd-trust-strip"></div>
+    <!-- Seller info (filled from store fields) -->
+    <div class="sv-seller-info" id="pd-seller-terms"
+         style="display:none;">
+      <h4 class="sv-seller-info-title">Seller Info</h4>
+      <div id="pd-seller-terms-rows"></div>
+    </div>
+
+    <!-- Disclaimer -->
+    <p class="sv-seller-disclaimer">Orders are fulfilled directly by the seller. Delivery, returns &amp; payment terms are as per seller's policy.</p>
 
     <!-- Spacer -->
     <div style="height:40px;"></div>
@@ -1140,7 +1139,7 @@
 
 <div id="toast"></div>
 
-<script src="js/app.js?v=2"></script>
+<script src="js/app.js?v=3"></script>
 <!-- ════ FOOTER ════ -->
 <footer id="site-footer" style="background:var(--ink);color:var(--paper);padding:3rem clamp(1rem,5%,3rem) 2rem;margin-top:0;">
   <div style="max-width:1100px;margin:0 auto;">
