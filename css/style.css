@@ -1410,9 +1410,14 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--paper);color:va
 
 /* ════ SELLER DASHBOARD ════ */
 #sv-dashboard{background:white;border:1px solid var(--border-light);border-radius:var(--radius);padding:1.2rem;margin-bottom:2rem;}
-.dash-tabs{display:flex;gap:0.5rem;margin-bottom:1.2rem;border-bottom:1px solid var(--border-light);padding-bottom:0.8rem;}
+.dash-tabs{display:flex;gap:0.5rem;margin-bottom:1.2rem;border-bottom:1px solid var(--border-light);padding-bottom:0.8rem;overflow-x:auto;scrollbar-width:none;}
+.dash-tabs::-webkit-scrollbar{display:none;}
 .dash-tab{background:none;border:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:0.82rem;font-weight:600;color:var(--ink-light);cursor:pointer;padding:0.4rem 0.9rem;border-radius:100px;transition:all 0.2s;display:flex;align-items:center;gap:0.4rem;}
 .dash-tab.on{background:var(--ink);color:white;}
+.dash-tab{flex-shrink:0;white-space:nowrap;}
+.dash-info-hint{font-size:0.78rem;color:var(--ink-light);line-height:1.5;margin-bottom:1rem;}
+.dash-save-btn{width:100%;background:var(--ink);color:white;border:none;padding:0.85rem;border-radius:var(--radius-sm);font-size:0.9rem;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;transition:opacity 0.2s;}
+.dash-save-btn:disabled{opacity:0.6;cursor:default;}
 .dash-badge{background:var(--rose);color:white;font-size:0.65rem;font-weight:700;padding:0.1rem 0.45rem;border-radius:100px;min-width:18px;text-align:center;}
 .dash-order-list{display:flex;flex-direction:column;gap:0.7rem;}
 .dash-order-card{background:var(--paper);border:1px solid var(--border-light);border-radius:var(--radius-sm);padding:0.9rem 1rem;display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;}

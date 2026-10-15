@@ -26,7 +26,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<link rel="stylesheet" href="css/style.css?v=5">
+<link rel="stylesheet" href="css/style.css?v=6">
 </head>
 <body>
 
@@ -1139,7 +1139,7 @@
 
 <div id="toast"></div>
 
-<script src="js/app.js?v=3"></script>
+<script src="js/app.js?v=4"></script>
 <!-- ════ FOOTER ════ -->
 <footer id="site-footer" style="background:var(--ink);color:var(--paper);padding:3rem clamp(1rem,5%,3rem) 2rem;margin-top:0;">
   <div style="max-width:1100px;margin:0 auto;">
@@ -1611,6 +1611,10 @@
               onclick="switchDashTab('analytics',this)">
         Analytics
       </button>
+      <button class="dash-tab"
+              onclick="switchDashTab('info',this)">
+        Store Info
+      </button>
     </div>
 
     <div id="dash-pending" class="dash-panel">
@@ -1654,6 +1658,42 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <div id="dash-info" class="dash-panel"
+         style="display:none">
+      <div class="dash-info-hint">
+        Shown on your product pages under
+        "Seller Info". Leave a field empty to hide it.
+      </div>
+      <div class="fg">
+        <label class="fl" for="di-delivery-areas">Ships to</label>
+        <input type="text" class="fi" id="di-delivery-areas"
+               maxlength="120"
+               placeholder="e.g. Mumbai, Thane, Navi Mumbai">
+      </div>
+      <div class="fg">
+        <label class="fl" for="di-delivery-time">Delivery time</label>
+        <input type="text" class="fi" id="di-delivery-time"
+               maxlength="80"
+               placeholder="e.g. 2–4 days">
+      </div>
+      <div class="fg">
+        <label class="fl" for="di-return-policy">Returns</label>
+        <textarea class="ft" id="di-return-policy"
+                  maxlength="300"
+                  placeholder="e.g. Exchange within 3 days if damaged on arrival"></textarea>
+      </div>
+      <div class="fg">
+        <label class="fl" for="di-payment-methods">Payment</label>
+        <input type="text" class="fi" id="di-payment-methods"
+               maxlength="120"
+               placeholder="e.g. UPI, Cash on delivery">
+      </div>
+      <button class="dash-save-btn" id="di-save-btn"
+              onclick="saveSellerInfo()">
+        Save
+      </button>
     </div>
 
   </div>

@@ -1585,6 +1585,53 @@ async function saveStory() {
 }
 
 // ═══════════════════════════════════
+// SELLER INFO — shown on product pages
+// ═══════════════════════════════════
+const SELLER_INFO_FIELDS = {
+  delivery_areas:  'di-delivery-areas',
+  delivery_time:   'di-delivery-time',
+  return_policy:   'di-return-policy',
+  payment_methods: 'di-payment-methods',
+};
+
+function fillSellerInfoForm() {
+  Object.entries(SELLER_INFO_FIELDS).forEach(([col, id]) => {
+    document.getElementById(id).value = curStore?.[col] || '';
+  });
+}
+
+async function saveSellerInfo() {
+  if (!curStore || !curStore.handle) return;
+  const btn = document.getElementById('di-save-btn');
+
+  // Empty fields are saved as null so they stay hidden
+  const updates = {};
+  Object.entries(SELLER_INFO_FIELDS).forEach(([col, id]) => {
+    updates[col] =
+      document.getElementById(id).value.trim() || null;
+  });
+
+  btn.textContent = 'Saving…'; btn.disabled = true;
+  const { error } = await sb
+    .from('stores')
+    .update(updates)
+    .eq('handle', curStore.handle);
+  btn.textContent = 'Save'; btn.disabled = false;
+
+  if (error) {
+    console.error('Seller info save error:', error);
+    showToast('Save failed — try again');
+    return;
+  }
+
+  Object.assign(curStore, updates);
+  const idx = allStores.findIndex(s =>
+    s.handle === curStore.handle);
+  if (idx > -1) Object.assign(allStores[idx], updates);
+  showToast('Seller info saved! ✓');
+}
+
+// ═══════════════════════════════════
 // ADMIN PANEL
 // ═══════════════════════════════════
 
@@ -1798,9 +1845,11 @@ async function handleProfilePhotoUpload(event) {
 function switchDashTab(tab, el) {
   document.querySelectorAll('.dash-tab').forEach(t => t.classList.remove('on'));
   el.classList.add('on');
+  el.scrollIntoView({block:'nearest', inline:'nearest'});
   document.getElementById('dash-pending').style.display = tab === 'pending' ? 'block' : 'none';
   document.getElementById('dash-accepted').style.display = tab === 'accepted' ? 'block' : 'none';
   document.getElementById('dash-analytics').style.display = tab === 'analytics' ? 'block' : 'none';
+  document.getElementById('dash-info').style.display = tab === 'info' ? 'block' : 'none';
 }
 
 async function loadSellerDashboard(storeHandle) {
@@ -3101,6 +3150,7 @@ function openDashPanel() {
   const overlay = document.getElementById('dash-panel-overlay');
   overlay.style.display = 'flex';
   loadSellerDashboard(curStore.handle);
+  fillSellerInfoForm();
 }
 
 function closeDashPanel() {
