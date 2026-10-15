@@ -2566,18 +2566,6 @@ function openProductDetail(handle, productId) {
   document.getElementById('pd-price')
     .textContent = '₹' + p.price;
 
-  // Sub description (first line of desc as subtitle)
-  const subDescEl = document.getElementById(
-    'pd-sub-desc');
-  if (p.description) {
-    const firstLine = p.description
-      .split('.')[0].trim();
-    subDescEl.textContent = firstLine.length > 60
-      ? '' : firstLine;
-  } else {
-    subDescEl.textContent = '';
-  }
-
   // ── Seller card ──
   const avEl = document.getElementById('pd-seller-av');
   if (s.logo_url) {
