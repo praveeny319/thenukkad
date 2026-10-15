@@ -1315,8 +1315,17 @@ function handleExtraPhotoUpload(event) {
   reader.readAsDataURL(file);
 }
 
+// Handle of the store whose product was saved while the
+// editor stayed open; the store page refreshes on close
+let _editSavedHandle = null;
+
 function closeEditProduct() {
   document.getElementById('edit-prod-modal').classList.remove('open');
+  if (_editSavedHandle) {
+    const handle = _editSavedHandle;
+    _editSavedHandle = null;
+    openStore(handle);
+  }
 }
 
 // Rejects if a network call takes longer than ms,
@@ -1459,7 +1468,7 @@ async function saveEditProduct() {
       const prod = (store.products || []).find(p => String(p.id) === String(productId));
       if (prod) {
         prod.name = name; prod.price = price; prod.description = desc;
-        prod.images = _editExtraPhotos.filter(Boolean);
+        prod.images = finalExtraUrls;
         if (image_url) prod.image_url = image_url;
       }
     }
@@ -1469,9 +1478,15 @@ async function saveEditProduct() {
     const epImgInput = document.getElementById('ep-image-file');
     if (epImgInput) epImgInput.value = '';
 
-    closeEditProduct();
-    openStore(handle);
-    showToast('Product updated! ✓');
+    // Editor now holds the uploaded URLs, so saving
+    // again won't re-upload or drop the extra photos
+    _editExtraFiles = [];
+    renderExtraPhotosGrid(finalExtraUrls);
+
+    // Stay in the editor; store page refreshes on close
+    _editSavedHandle = handle;
+    btn.textContent = 'Save'; btn.disabled = false;
+    showToast('Product saved successfully!');
 
   } catch (err) {
     console.error('saveEditProduct error:', err);
@@ -1522,6 +1537,7 @@ async function toggleHideProduct() {
     : 'Product visible again ✓');
 
   // Re-render store to reflect change
+  _editSavedHandle = null;
   closeEditProduct();
   openStore(handle);
 }
@@ -1559,6 +1575,7 @@ async function deleteProduct() {
   }
 
   showToast('Product deleted ✓');
+  _editSavedHandle = null;
   closeEditProduct();
   openStore(handle);
 }
