@@ -1309,11 +1309,13 @@ function extraPhotosFull() {
   return true;
 }
 
-function handleExtraPhotoUpload(event) {
-  const file = event.target.files[0];
-  if (!file) return;
+async function handleExtraPhotoUpload(event) {
+  const picked = event.target.files[0];
+  if (!picked) return;
   event.target.value = '';
   if (extraPhotosFull()) return;
+  const file = await cropProductPhoto(picked);
+  if (!file) return;
   const reader = new FileReader();
   reader.onload = (e) => {
     if (extraPhotosFull()) return;
@@ -1394,16 +1396,19 @@ async function saveEditProduct() {
 
       showToast('Processing image…');
       let fileToUpload = imageFile;
-      try {
-        fileToUpload = await processProductImage(imageFile, 800, 0.85);
-      } catch (err) {
-        console.warn('Image processing failed, using original:', err);
-        // Use original if processing fails
+      // Cropped photos are already sized + compressed
+      if (!imageFile._cropped) {
+        try {
+          fileToUpload = await processProductImage(imageFile, 800, 0.85);
+        } catch (err) {
+          console.warn('Image processing failed, using original:', err);
+          // Use original if processing fails
+        }
       }
 
       showToast('Uploading image…');
 
-      const fileName = `products/${handle}_${productId}_${Date.now()}.jpg`;
+      const fileName = `products/${handle}_${productId}_${Date.now()}.${cropExt(fileToUpload)}`;
 
       const { error: upErr } = await withTimeout(sb.storage
         .from('product-images')
@@ -1433,11 +1438,11 @@ async function saveEditProduct() {
         // This is a new local file — upload now
         try {
           showToast(`Uploading photo ${i+1}…`);
-          const processed = await processProductImage(
-            file, 800, 0.85);
+          const processed = file._cropped ? file :
+            await processProductImage(file, 800, 0.85);
           const fileName =
             `products/${handle}_extra_` +
-            `${productId}_${i}_${Date.now()}.jpg`;
+            `${productId}_${i}_${Date.now()}.${cropExt(processed)}`;
           const { error: upErr } = await withTimeout(sb.storage
             .from('product-images')
             .upload(fileName, processed,
@@ -1596,8 +1601,11 @@ async function deleteProduct() {
   openStore(handle);
 }
 
-function previewEditImage(event) {
-  const file = event.target.files[0];
+async function previewEditImage(event) {
+  const picked = event.target.files[0];
+  event.target.value = '';
+  if (!picked) return;
+  const file = await cropProductPhoto(picked);
   if (!file) return;
   const reader = new FileReader();
   reader.onload = (e) => {
@@ -2498,6 +2506,12 @@ function orderWA(e, productName, price) {
   startBuyerOrder(productName, price, imageUrl);
 }
 
+// Product detail carousel: jump to a photo (dot tap)
+function pdGoTo(i) {
+  const track = document.getElementById('pd-track');
+  track.scrollTo({ left: i * track.clientWidth, behavior: 'smooth' });
+}
+
 // Product detail overlay
 function openProductDetail(handle, productId) {
   const s = allStores.find(x => x.handle === handle);
@@ -2530,69 +2544,25 @@ function openProductDetail(handle, productId) {
     });
   }
 
-  let currentImgIdx = 0;
-
-  function showImage(idx) {
-    currentImgIdx = idx;
-    const heroImg = document.getElementById(
-      'pd-hero-img');
-    const counter = document.getElementById(
-      'pd-img-counter');
-    const hero = document.getElementById('pd-hero');
-
-    if (allImgs.length > 0) {
-      heroImg.src = allImgs[idx];
-      heroImg.style.display = 'block';
-      // Set or update blur background
-      let blurBg = hero.querySelector('.pd-hero-blur-bg');
-      if (!blurBg) {
-        blurBg = document.createElement('div');
-        blurBg.className = 'pd-hero-blur-bg';
-        hero.insertBefore(blurBg, hero.firstChild);
-      }
-      blurBg.style.backgroundImage = `url('${allImgs[idx]}')`;
-    } else {
-      heroImg.style.display = 'none';
-      hero.innerHTML =
-        `<div class="pd-hero-placeholder">
-          ${esc(s.emoji || '🌿')}
-        </div>`;
-    }
-
-    // Counter
-    if (allImgs.length > 1) {
-      counter.textContent =
-        `${idx + 1} / ${allImgs.length}`;
-      counter.style.display = 'block';
-    } else {
-      counter.style.display = 'none';
-    }
-
-    // Update active thumb
-    document.querySelectorAll('.pd-thumb')
-      .forEach((t, i) => {
-        t.classList.toggle('active', i === idx);
-      });
-  }
-
-  // Thumbnails
-  const thumbsEl = document.getElementById('pd-thumbs');
-  if (allImgs.length > 1) {
-    thumbsEl.style.display = 'flex';
-    thumbsEl.innerHTML = allImgs.map((url, i) =>
-      `<img class="pd-thumb ${i===0?'active':''}"
-            src="${safeUrl(url)}"
-            onclick="pdShowImage(${i})">`
-    ).join('');
-  } else {
-    thumbsEl.style.display = 'none';
-    thumbsEl.innerHTML = '';
-  }
-
-  showImage(0);
-
-  // Store showImage globally for thumb clicks
-  window.pdShowImage = showImage;
+  // Square swipe carousel; dots follow the visible slide
+  const track = document.getElementById('pd-track');
+  const dots = document.getElementById('pd-dots');
+  track.innerHTML = allImgs.length
+    ? allImgs.map((url, i) =>
+        `<div class="pd-slide"><img src="${safeUrl(url)}" alt="${esc(p.name)}"${i ? ' loading="lazy"' : ''} decoding="async"></div>`
+      ).join('')
+    : `<div class="pd-slide pd-slide-empty">${esc(s.emoji || '🌿')}</div>`;
+  track.scrollLeft = 0;
+  dots.innerHTML = allImgs.length > 1
+    ? allImgs.map((_, i) =>
+        `<button class="pd-dot${i ? '' : ' active'}" aria-label="Photo ${i + 1}" onclick="pdGoTo(${i})"></button>`
+      ).join('')
+    : '';
+  track.onscroll = () => {
+    const idx = Math.round(track.scrollLeft / track.clientWidth);
+    [...dots.children].forEach((d, i) =>
+      d.classList.toggle('active', i === idx));
+  };
 
   // ── Info ──
   const catMap = {
@@ -3414,8 +3384,11 @@ function addProd() {
   list.appendChild(d);
 }
 
-function handleImgSelect(id, e) {
-  const file = e.target.files[0];
+async function handleImgSelect(id, e) {
+  const picked = e.target.files[0];
+  e.target.value = '';
+  if (!picked) return;
+  const file = await cropProductPhoto(picked);
   if (!file) return;
   productImageFiles[id] = file;
   const reader = new FileReader();
@@ -3628,6 +3601,184 @@ function closeAddProductModal() {
 let apmImageFile = null;
 
 // ═══════════════════════════════════
+// PHOTO CROPPER
+// Fixed 1:1 frame before product photo
+// uploads: drag to reposition, pinch /
+// slider / wheel to zoom. Exports a
+// 1080×1080 WebP (JPEG fallback), q 0.8
+// ═══════════════════════════════════
+
+const CROP_OUTPUT = 1080;
+const CROP_MAX_ZOOM = 4;
+let _crop = null;
+let _cropBound = false;
+
+// Resolves with the cropped File, or null if the seller
+// cancels. A photo the browser can't open (e.g. HEIC on
+// desktop) falls back to the original file, as before.
+function cropProductPhoto(file) {
+  return new Promise(resolve => {
+    if (!file) return resolve(null);
+    if (_crop) cropClose(null);
+    if (!_cropBound) { cropBindEvents(); _cropBound = true; }
+    const url = URL.createObjectURL(file);
+    const img = document.getElementById('crop-img');
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.onload = () => {
+      img.onload = img.onerror = null;
+      document.getElementById('crop-overlay').classList.add('open');
+      const frame = document.getElementById('crop-frame');
+      const F = frame.clientWidth;
+      // Zoom 1 = image just covers the frame
+      const base = Math.max(F / img.naturalWidth, F / img.naturalHeight);
+      _crop = { file, url, img, frame, F, base, zoom: 1,
+        x: (F - img.naturalWidth * base) / 2,
+        y: (F - img.naturalHeight * base) / 2,
+        pointers: new Map(), resolve };
+      cropRender();
+    };
+    img.src = url;
+  });
+}
+
+// Upload file extension for a (possibly cropped) photo
+function cropExt(file) {
+  return file && file._cropped ? file.name.split('.').pop() : 'jpg';
+}
+
+// Keep the image covering the frame, then draw it
+function cropRender() {
+  const c = _crop;
+  const s = c.base * c.zoom;
+  const w = c.img.naturalWidth * s, h = c.img.naturalHeight * s;
+  c.x = Math.min(0, Math.max(c.F - w, c.x));
+  c.y = Math.min(0, Math.max(c.F - h, c.y));
+  c.img.style.width = w + 'px';
+  c.img.style.height = h + 'px';
+  c.img.style.transform = `translate(${c.x}px, ${c.y}px)`;
+  document.getElementById('crop-zoom').value = c.zoom;
+}
+
+// Zoom while keeping the point (cx, cy) in the frame fixed
+function cropSetZoom(z, cx, cy) {
+  const c = _crop;
+  z = Math.min(CROP_MAX_ZOOM, Math.max(1, z));
+  const k = z / c.zoom;
+  c.x = cx - (cx - c.x) * k;
+  c.y = cy - (cy - c.y) * k;
+  c.zoom = z;
+  cropRender();
+}
+
+function cropBindEvents() {
+  const frame = document.getElementById('crop-frame');
+  const rel = e => {
+    const r = frame.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  };
+  frame.addEventListener('pointerdown', e => {
+    if (!_crop) return;
+    try { frame.setPointerCapture(e.pointerId); } catch (_) {}
+    _crop.pointers.set(e.pointerId, rel(e));
+  });
+  frame.addEventListener('pointermove', e => {
+    const c = _crop;
+    if (!c || !c.pointers.has(e.pointerId)) return;
+    const old = c.pointers.get(e.pointerId);
+    const now = rel(e);
+    c.pointers.set(e.pointerId, now);
+    if (c.pointers.size === 1) {
+      // Drag
+      c.x += now.x - old.x;
+      c.y += now.y - old.y;
+      cropRender();
+    } else if (c.pointers.size === 2) {
+      // Pinch: zoom by finger distance, pan by midpoint
+      const other = [...c.pointers].find(([id]) => id !== e.pointerId)[1];
+      const d0 = Math.hypot(old.x - other.x, old.y - other.y);
+      const d1 = Math.hypot(now.x - other.x, now.y - other.y);
+      c.x += (now.x - old.x) / 2;
+      c.y += (now.y - old.y) / 2;
+      if (d0 > 0) cropSetZoom(c.zoom * d1 / d0,
+        (now.x + other.x) / 2, (now.y + other.y) / 2);
+      else cropRender();
+    }
+  });
+  const end = e => { if (_crop) _crop.pointers.delete(e.pointerId); };
+  frame.addEventListener('pointerup', end);
+  frame.addEventListener('pointercancel', end);
+  frame.addEventListener('wheel', e => {
+    if (!_crop) return;
+    e.preventDefault();
+    const p = rel(e);
+    cropSetZoom(_crop.zoom * Math.exp(-e.deltaY * 0.002), p.x, p.y);
+  }, { passive: false });
+  document.getElementById('crop-zoom').addEventListener('input', e => {
+    if (_crop) cropSetZoom(+e.target.value, _crop.F / 2, _crop.F / 2);
+  });
+  document.addEventListener('keydown', e => {
+    if (_crop && e.key === 'Escape') cropCancel();
+  });
+  // Frame size can change on rotate / resize
+  window.addEventListener('resize', () => {
+    const c = _crop;
+    if (!c) return;
+    const F = c.frame.clientWidth;
+    if (!F || F === c.F) return;
+    const k = F / c.F;
+    c.x *= k; c.y *= k; c.base *= k; c.F = F;
+    cropRender();
+  });
+}
+
+function cropClose(result) {
+  const c = _crop;
+  if (!c) return;
+  _crop = null;
+  document.getElementById('crop-overlay').classList.remove('open');
+  URL.revokeObjectURL(c.url);
+  c.img.removeAttribute('src');
+  c.resolve(result);
+}
+
+function cropCancel() { cropClose(null); }
+
+async function cropDone() {
+  const c = _crop;
+  if (!c) return;
+  const btn = document.getElementById('crop-done-btn');
+  btn.disabled = true;
+  try {
+    const s = c.base * c.zoom;
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = CROP_OUTPUT;
+    const ctx = canvas.getContext('2d');
+    // White behind transparent PNGs (JPEG has no alpha)
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, CROP_OUTPUT, CROP_OUTPUT);
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(c.img, -c.x / s, -c.y / s, c.F / s, c.F / s,
+      0, 0, CROP_OUTPUT, CROP_OUTPUT);
+    const toBlob = type =>
+      new Promise(r => canvas.toBlob(r, type, 0.8));
+    // Browsers that can't encode WebP return PNG instead
+    let blob = await toBlob('image/webp');
+    if (!blob || blob.type !== 'image/webp') blob = await toBlob('image/jpeg');
+    if (!blob) throw new Error('Canvas export failed');
+    const ext = blob.type === 'image/webp' ? 'webp' : 'jpg';
+    const out = new File([blob], `product_${Date.now()}.${ext}`,
+      { type: blob.type });
+    out._cropped = true;
+    cropClose(out);
+  } catch (err) {
+    console.error('Crop failed, using original:', err);
+    cropClose(c.file);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ═══════════════════════════════════
 // IMAGE PROCESSOR
 // Square crop + compress before upload
 // Applied to NEW uploads only —
@@ -3699,34 +3850,20 @@ function processProductImage(file, outputSize, quality) {
 }
 
 async function handleApmImg(e) {
-  const file = e.target.files[0];
+  const picked = e.target.files[0];
+  e.target.value = '';
+  if (!picked) return;
+  const file = await cropProductPhoto(picked);
   if (!file) return;
-
-  showToast('Processing image…');
-  try {
-    const processed = await processProductImage(file, 800, 0.85);
-    apmImageFile = processed;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      document.getElementById('apm-ipv').src = ev.target.result;
-      document.getElementById('apm-ipl').style.display = 'none';
-      document.getElementById('apm-ipw').style.display = 'block';
-      document.getElementById('apm-iua').classList.add('has-img');
-    };
-    reader.readAsDataURL(processed);
-    showToast('✓ Image ready');
-  } catch(err) {
-    console.error('Image process error:', err);
-    apmImageFile = file;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      document.getElementById('apm-ipv').src = ev.target.result;
-      document.getElementById('apm-ipl').style.display = 'none';
-      document.getElementById('apm-ipw').style.display = 'block';
-      document.getElementById('apm-iua').classList.add('has-img');
-    };
-    reader.readAsDataURL(file);
-  }
+  apmImageFile = file;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    document.getElementById('apm-ipv').src = ev.target.result;
+    document.getElementById('apm-ipl').style.display = 'none';
+    document.getElementById('apm-ipw').style.display = 'block';
+    document.getElementById('apm-iua').classList.add('has-img');
+  };
+  reader.readAsDataURL(file);
 }
 
 async function saveNewProduct() {
