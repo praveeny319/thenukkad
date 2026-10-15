@@ -1647,7 +1647,7 @@ async function saveSellerInfo() {
 
   if (error) {
     console.error('Seller info save error:', error);
-    showToast('Save failed — try again');
+    showToast('Save failed: ' + (error.message || error.code || 'unknown error'));
     return;
   }
 
