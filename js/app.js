@@ -4179,6 +4179,10 @@ function closeAuthModal() {
   document.getElementById('signup-err').classList.remove('show');
 }
 
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('auth-modal').classList.contains('open')) closeAuthModal();
+});
+
 function switchAuthTab(tab) {
   ['login','signup','forgot','reset'].forEach(t => {
     const el = document.getElementById('auth-' + t + '-form');
