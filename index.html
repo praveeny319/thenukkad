@@ -62,7 +62,7 @@
       </p>
       <div class="lp-cta-row">
         <button class="lp-btn-main"
-                onclick="startCreate()">
+                onclick="handleCreateClick('login')">
           Create Your Store Free →
         </button>
       </div>
@@ -331,7 +331,7 @@
         Free to start. No website needed.
       </p>
       <button class="lp-btn-main lp-btn-gold"
-              onclick="startCreate()">
+              onclick="handleCreateClick('login')">
         Create Your Store Free →
       </button>
     </div>
@@ -1145,7 +1145,7 @@
 
 <div id="toast"></div>
 
-<script src="js/app.js?v=11"></script>
+<script src="js/app.js?v=12"></script>
 <!-- ════ FOOTER ════ -->
 <footer id="site-footer" style="background:var(--ink);color:var(--paper);padding:3rem clamp(1rem,5%,3rem) 2rem;margin-top:0;">
   <div style="max-width:1100px;margin:0 auto;">
@@ -1157,7 +1157,7 @@
       <div>
         <div style="font-size:0.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:1rem;">Sellers</div>
         <div style="display:flex;flex-direction:column;gap:0.6rem;">
-          <a href="#" onclick="startCreate();return false;" style="font-size:0.85rem;color:rgba(255,255,255,0.7);text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,0.7)'">Create your store</a>
+          <a href="#" onclick="handleCreateClick('login');return false;" style="font-size:0.85rem;color:rgba(255,255,255,0.7);text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,0.7)'">Create your store</a>
           <a href="#" onclick="return false;" style="display:none">Browse marketplace</a>
         </div>
       </div>
@@ -1368,7 +1368,7 @@
           — Online, in 5 minutes.
         </em>
       </div>
-      <button onclick="closeNukkadStory();startCreate();
+      <button onclick="closeNukkadStory();handleCreateClick('login');
                        event.stopPropagation();"
               style="background:var(--gold,#c8902a);
                      color:#0d0905;border:none;

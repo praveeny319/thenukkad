@@ -4439,8 +4439,8 @@ async function logOut() {
   showPg('home');
 }
 
-function handleCreateClick() {
-  if (!currentAuthUser) { openAuthModal('signup'); return; }
+function handleCreateClick(tab = 'signup') {
+  if (!currentAuthUser) { openAuthModal(tab); return; }
   startCreate();
 }
 
