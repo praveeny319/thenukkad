@@ -359,6 +359,8 @@ window.addEventListener('popstate', (e) => {
   document.getElementById('chat-fab').classList.remove('visible');
   closeChatWidget();
   window.scrollTo(0, 0);
+  // Returning to admin panel — always reload fresh
+  if (page === 'admin') loadAdminData({ reset: true });
 });
 
 async function loadCustomerProfile(profileId) {
@@ -1825,28 +1827,50 @@ function switchAdminTab(tab, el) {
   });
 }
 
-async function loadAdminData() {
+let _adminLoadId = 0;
+
+async function loadAdminData(opts = {}) {
   if (!isAdmin()) return;
+  // Ignore responses from an older load if a newer one started
+  const loadId = ++_adminLoadId;
+
+  // Opening / returning to the panel — reset view state
+  if (opts.reset) {
+    _adminEditHandle = null;
+    const firstTab = document.querySelector('.admin-tab');
+    if (firstTab) switchAdminTab('stores', firstTab);
+  }
+
+  // Clear stale content before re-rendering
+  ['adm-stores-list','adm-orders-list','adm-users-list'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '<div class="adm-empty">Loading…</div>';
+  });
   showToast('Loading admin data…');
 
   try {
     // Fetch all stores
-    const { data: stores } = await sb
+    const { data: stores, error: storesErr } = await sb
       .from('stores')
       .select('*')
       .order('created_at', { ascending: false });
+    if (storesErr) throw storesErr;
 
     // Fetch all orders
-    const { data: orders } = await sb
+    const { data: orders, error: ordersErr } = await sb
       .from('orders')
       .select('*')
       .order('created_at', { ascending: false });
+    if (ordersErr) console.warn('Admin orders load error:', ordersErr);
 
     // Fetch all users
-    const { data: users } = await sb
+    const { data: users, error: usersErr } = await sb
       .from('seller_profiles')
       .select('*')
       .order('created_at', { ascending: false });
+    if (usersErr) console.warn('Admin users load error:', usersErr);
+
+    if (loadId !== _adminLoadId) return;
 
     // ── Overview stats ──
     const storeList = stores || [];
@@ -1875,7 +1899,7 @@ async function loadAdminData() {
     // ── Render stores ──
     const storesEl = document.getElementById('adm-stores-list');
     if (storeList.length === 0) {
-      storesEl.innerHTML = '<div class="adm-empty">No stores yet</div>';
+      storesEl.innerHTML = '<div class="adm-empty">No stores found</div>';
     } else {
       storesEl.innerHTML = storeList.map(s => {
         const storeOrders = orderList.filter(o => o.store_handle === s.handle);
@@ -1961,6 +1985,13 @@ async function loadAdminData() {
 
   } catch(err) {
     console.error('Admin load error:', err);
+    if (loadId !== _adminLoadId) return;
+    const storesEl = document.getElementById('adm-stores-list');
+    if (storesEl) storesEl.innerHTML = '<div class="adm-empty">Could not load stores — tap Refresh</div>';
+    ['adm-orders-list','adm-users-list'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = '<div class="adm-empty">Could not load — tap Refresh</div>';
+    });
     showToast('Failed to load admin data');
   }
 }
@@ -4514,7 +4545,7 @@ async function onAuthSuccess(user, showWelcome) {
     if (storeBtn) {
       storeBtn.onclick = () => {
         showPg('admin');
-        loadAdminData();
+        loadAdminData({ reset: true });
       };
     }
   }
