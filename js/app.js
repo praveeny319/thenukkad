@@ -2009,6 +2009,16 @@ function adminEditStore(handle) {
   showToast('👑 Admin edit mode — owner controls active');
 }
 
+// Store page "← Back": admin returns to admin panel, everyone else home
+function storeBack() {
+  if (isAdmin()) {
+    showPg('admin');
+    loadAdminData({ reset: true });
+  } else {
+    goHome();
+  }
+}
+
 // ═══════════════════════════════════
 // PROFILE PHOTO UPLOAD
 // ═══════════════════════════════════
