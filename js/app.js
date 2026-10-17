@@ -1681,14 +1681,27 @@ function fillSellerInfoForm() {
   Object.entries(SELLER_INFO_FIELDS).forEach(([col, id]) => {
     document.getElementById(id).value = curStore?.[col] || '';
   });
+  document.getElementById('di-whatsapp').value = curStore?.whatsapp || '';
 }
 
 async function saveSellerInfo() {
   if (!curStore || !curStore.handle) return;
   const btn = document.getElementById('di-save-btn');
 
+  // WhatsApp is required — buyers order through it
+  const waEl = document.getElementById('di-whatsapp');
+  const whatsapp = waEl.value.replace(/[\s-]/g, '');
+  if (!whatsapp) {
+    waEl.style.borderColor = 'var(--rose)';
+    waEl.focus();
+    showToast('Please enter your WhatsApp number');
+    return;
+  }
+  waEl.style.borderColor = '';
+  waEl.value = whatsapp;
+
   // Empty fields are saved as null so they stay hidden
-  const updates = {};
+  const updates = { whatsapp };
   Object.entries(SELLER_INFO_FIELDS).forEach(([col, id]) => {
     updates[col] =
       document.getElementById(id).value.trim() || null;
@@ -1711,7 +1724,7 @@ async function saveSellerInfo() {
   const idx = allStores.findIndex(s =>
     s.handle === curStore.handle);
   if (idx > -1) Object.assign(allStores[idx], updates);
-  showToast('Seller info saved! ✓');
+  showToast('Settings saved!');
 }
 
 // ═══════════════════════════════════
