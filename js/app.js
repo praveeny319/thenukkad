@@ -670,7 +670,7 @@ function goMyStore() {
   }
   const slug = localStorage.getItem('nukkad_store_slug');
   if (slug) {
-    openStore(slug);
+    openMyStore(null, slug);
   } else {
     openPanel();
   }
@@ -3609,6 +3609,7 @@ async function publish(){
     }
 
     // Save store slug
+    _myStoresCache = null; // new store — refetch list next time
     localStorage.setItem('nukkad_store_slug', NS.handle);
     const myStores = JSON.parse(localStorage.getItem('nukkad_my_stores') || '[]');
     if (!myStores.includes(NS.handle)) myStores.push(NS.handle);
@@ -4457,9 +4458,17 @@ async function onAuthSuccess(user, showWelcome) {
 
   // Always load fresh profile from Supabase
   // to ensure correct user data
-  if (saved.email || user.email) {
-    const emailToQuery = user.email || saved.email;
-    const { data: profile } = await sb.from('seller_profiles').select('id, name, phone, area, city').eq('email', emailToQuery).single();
+  // Profile and store list are independent — fetch in parallel
+  const emailToQuery = user.email || saved.email;
+  const [profileRes, storesRes] = emailToQuery
+    ? await Promise.all([
+        sb.from('seller_profiles').select('id, name, phone, area, city').eq('email', emailToQuery).single(),
+        sb.from('stores').select('handle, brand_name').eq('owner_email', emailToQuery)
+      ])
+    : [{}, {}];
+
+  if (emailToQuery) {
+    const profile = profileRes.data;
     if (profile) {
       saved.profileId = profile.id;
       // Only overwrite local data with DB data
@@ -4475,14 +4484,10 @@ async function onAuthSuccess(user, showWelcome) {
   }
 
   // Also load this user's store slug if any
-  const emailForStore = user.email || saved.email;
-  if (emailForStore) {
-    const { data: myStoreList } = await sb.from('stores').select('handle').eq('owner_email', emailForStore);
-    const allHandles = (myStoreList || []).map(s => s.handle);
-    if (allHandles.length > 0) {
-      localStorage.setItem('nukkad_store_slug', allHandles[0]);
-      localStorage.setItem('nukkad_my_stores', JSON.stringify(allHandles));
-    } else {
+  if (emailToQuery && !storesRes.error) {
+    const myStoreList = (storesRes.data || []).filter(s => s.handle);
+    setMyStoresCache(emailToQuery, myStoreList);
+    if (myStoreList.length === 0) {
       localStorage.removeItem('nukkad_store_slug');
       localStorage.removeItem('nukkad_my_stores');
     }
@@ -4514,6 +4519,7 @@ async function onAuthSuccess(user, showWelcome) {
 }
 
 function onSignOut() {
+  _myStoresCache = null;
   localStorage.removeItem('nukkad_store_slug');
   localStorage.removeItem('nukkad_my_stores');
   localStorage.removeItem('nukkad_user');
@@ -4528,6 +4534,7 @@ function onSignOut() {
 
 async function logOut() {
   await sb.auth.signOut();
+  _myStoresCache = null;
   localStorage.removeItem('nukkad_user');
   localStorage.removeItem('nukkad_store_slug');
   localStorage.removeItem('nukkad_my_stores');
@@ -4543,38 +4550,69 @@ function handleCreateClick(tab = 'signup') {
   startCreate();
 }
 
+// Seller's own store list, kept in memory so My Account
+// opens instantly. Filled on login, refreshed when stale.
+let _myStoresCache = null; // { email, list, at }
+const MY_STORES_TTL = 60 * 1000;
+
+function setMyStoresCache(email, list) {
+  _myStoresCache = { email, list, at: Date.now() };
+  const handles = list.map(s => s.handle);
+  if (handles.length > 0) {
+    localStorage.setItem('nukkad_my_stores', JSON.stringify(handles));
+    localStorage.setItem('nukkad_store_slug', handles[0]);
+  }
+}
+
 async function loadMyStores(storeWrap) {
-  storeWrap.innerHTML = '<div style="font-size:0.8rem;color:var(--ink-light);padding:0.5rem 0">Loading...</div>';
+  const saved = JSON.parse(localStorage.getItem('nukkad_user') || '{}');
+  const email = currentAuthUser?.email || saved.email;
+  const cached = _myStoresCache && _myStoresCache.email === email
+    ? _myStoresCache : null;
+
+  // Show cached list immediately, otherwise a skeleton
+  if (cached) {
+    renderMyStores(storeWrap, cached.list);
+    if (Date.now() - cached.at < MY_STORES_TTL) return;
+  } else {
+    storeWrap.innerHTML = `
+      <div class="pp-store-skel"></div>
+      <div class="pp-store-skel"></div>`;
+  }
+
   try {
     let myList = [];
-    const saved = JSON.parse(localStorage.getItem('nukkad_user') || '{}');
-    // Try Supabase by email
-    if (saved.email || currentAuthUser?.email) {
-      const email = saved.email || currentAuthUser.email;
-      const { data } = await sb.from('stores').select('handle, brand_name').eq('owner_email', email);
-      if (data && data.length > 0) {
-        myList = data;
-        const handles = data.map(s => s.handle);
-        localStorage.setItem('nukkad_my_stores', JSON.stringify(handles));
-        localStorage.setItem('nukkad_store_slug', handles[0]);
-      }
+    if (email) {
+      const { data, error } = await sb.from('stores').select('handle, brand_name').eq('owner_email', email);
+      if (error) throw error;
+      myList = (data || []).filter(s => s.handle);
+      setMyStoresCache(email, myList);
     }
     // Fallback to localStorage
     if (myList.length === 0) {
       const localSlugs = JSON.parse(localStorage.getItem('nukkad_my_stores') || '[]');
-      myList = localSlugs.map(slug => {
+      myList = localSlugs.filter(Boolean).map(slug => {
         const s = allStores.find(x => x.handle === slug);
         return { handle: slug, brand_name: s ? s.brand_name : slug };
       });
     }
+    renderMyStores(storeWrap, myList);
+  } catch(e) {
+    console.error('loadMyStores error:', e);
+    // Keep showing the cached list if we have one
+    if (!cached) storeWrap.innerHTML = '<div style="font-size:0.8rem;color:var(--rose)">Error loading stores</div>';
+  }
+}
+
+function renderMyStores(storeWrap, myList) {
     if (myList.length > 0) {
       storeWrap.innerHTML = myList.map(s => `
-        <div onclick="closePanel();openStore(${jsArg(s.handle)})" style="cursor:pointer;padding:0.85rem 1rem;background:var(--paper-deep);border-radius:var(--radius-sm);margin-bottom:0.5rem;display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border-light);">
+        <div onclick="openMyStore(this, ${jsArg(s.handle)})" style="cursor:pointer;padding:0.85rem 1rem;background:var(--paper-deep);border-radius:var(--radius-sm);margin-bottom:0.5rem;display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border-light);">
           <div>
             <div style="font-weight:700;font-size:0.9rem;color:var(--ink)">${esc(s.brand_name)}</div>
             <div style="font-size:0.75rem;color:var(--earth);margin-top:0.1rem">thenukkad.store/${esc(s.handle)}</div>
           </div>
-          <span style="color:var(--ink-light)">→</span>
+          <span class="pp-store-arrow" style="color:var(--ink-light)">→</span>
         </div>`).join('');
     } else {
       storeWrap.innerHTML = `<div class="pp-no-store">
@@ -4586,9 +4624,46 @@ async function loadMyStores(storeWrap) {
     if (currentAuthUser) {
       storeWrap.innerHTML += `<button onclick="logOut()" style="width:100%;margin-top:1.2rem;background:none;border:1.5px solid var(--rose);color:var(--rose);padding:0.7rem;border-radius:var(--radius-sm);font-size:0.84rem;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;">Log Out</button>`;
     }
+}
+
+// Make sure a store's full data (incl. products) is in
+// allStores before opening it. allStores may still be
+// loading in the background (e.g. after a ?store= link).
+async function ensureStoreLoaded(handle) {
+  const existing = allStores.find(x => x.handle === handle);
+  if (existing && existing.products) return existing;
+  const { data, error } = await sb
+    .from('stores')
+    .select('*, products(*)')
+    .eq('handle', handle)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  data.products = data.products || [];
+  const i = allStores.findIndex(x => x.handle === handle);
+  if (i > -1) allStores[i] = data;
+  else allStores.push(data);
+  return data;
+}
+
+// Open one of the seller's own stores from My Account / bottom nav
+async function openMyStore(el, handle) {
+  if (!handle) { showToast('Store not found'); return; }
+  if (el?.dataset.loading) return;
+  const arrow = el?.querySelector('.pp-store-arrow');
+  if (el) { el.dataset.loading = '1'; el.style.opacity = '0.6'; }
+  if (arrow) arrow.innerHTML = '<span class="spin"></span>';
+  try {
+    const store = await ensureStoreLoaded(handle);
+    if (!store) { showToast('Store not found'); return; }
+    closePanel();
+    await openStore(handle);
   } catch(e) {
-    console.error('loadMyStores error:', e);
-    storeWrap.innerHTML = '<div style="font-size:0.8rem;color:var(--rose)">Error loading stores</div>';
+    console.error('openMyStore error:', e);
+    showToast('Could not open store — please try again');
+  } finally {
+    if (el) { delete el.dataset.loading; el.style.opacity = ''; }
+    if (arrow) arrow.textContent = '→';
   }
 }
 function togglePass(inputId, btn) {

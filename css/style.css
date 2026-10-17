@@ -1013,6 +1013,8 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--paper);color:va
   padding:0.6rem 0;border-bottom:1px solid var(--border-light);
 }
 .pp-row:last-child{border-bottom:none;}
+.pp-store-arrow .spin{border-color:var(--border);border-top-color:var(--ink);}
+.pp-store-skel{height:58px;background:var(--paper-deep);border:1px solid var(--border-light);border-radius:var(--radius-sm);margin-bottom:0.5rem;animation:pulse 1.5s ease-in-out infinite;}
 .pp-section-head{display:flex;align-items:center;justify-content:space-between;}
 .pp-edit-btn{background:none;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:0.2rem 0.7rem;font-size:0.72rem;font-weight:700;letter-spacing:0;text-transform:none;color:var(--earth);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;}
 .pp-edit-actions{display:flex;gap:0.6rem;}
