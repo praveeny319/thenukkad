@@ -774,11 +774,13 @@ async function openStore(handle) {
 
   // Fetch live status from Supabase (real-time toggle)
   try {
-    const { data: freshStore, error: fetchErr } = await sb
+    // Capped so a slow network never blocks opening —
+    // we fall back to the data already in memory
+    const { data: freshStore, error: fetchErr } = await withTimeout(sb
       .from('stores')
       .select('logo_url, story, cover_photos')
       .eq('handle', handle)
-      .single();
+      .single(), 3000);
     if (fetchErr) {
       console.warn('Store fetch error:', fetchErr.message);
     }
@@ -4614,6 +4616,10 @@ function renderMyStores(storeWrap, myList) {
           </div>
           <span class="pp-store-arrow" style="color:var(--ink-light)">→</span>
         </div>`).join('');
+      // Warm the store data now so a tap opens instantly
+      myList.forEach(s =>
+        ensureStoreLoaded(s.handle).catch(e =>
+          console.warn('Store prefetch failed:', e)));
     } else {
       storeWrap.innerHTML = `<div class="pp-no-store">
         <p>You haven't created a store yet</p>
@@ -4632,13 +4638,16 @@ function renderMyStores(storeWrap, myList) {
 async function ensureStoreLoaded(handle) {
   const existing = allStores.find(x => x.handle === handle);
   if (existing && existing.products) return existing;
-  const { data, error } = await sb
+  const { data, error } = await withTimeout(sb
     .from('stores')
     .select('*, products(*)')
     .eq('handle', handle)
-    .maybeSingle();
+    .maybeSingle(), 10000);
   if (error) throw error;
   if (!data) return null;
+  // allStores may have been refilled while we waited
+  const fresh = allStores.find(x => x.handle === handle);
+  if (fresh && fresh.products) return fresh;
   data.products = data.products || [];
   const i = allStores.findIndex(x => x.handle === handle);
   if (i > -1) allStores[i] = data;
@@ -4656,8 +4665,9 @@ async function openMyStore(el, handle) {
   try {
     const store = await ensureStoreLoaded(handle);
     if (!store) { showToast('Store not found'); return; }
-    closePanel();
+    // Keep the panel + spinner up until the store page is showing
     await openStore(handle);
+    closePanel();
   } catch(e) {
     console.error('openMyStore error:', e);
     showToast('Could not open store — please try again');
