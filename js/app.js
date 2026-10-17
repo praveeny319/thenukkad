@@ -980,8 +980,10 @@ async function handleAvatarUpload(event) {
     return;
   }
   const prevLogo = curStore.logo_url || null;
+  let avatarSettled = false; // upload finished — don't let a late preview overwrite
   const previewReader = new FileReader();
   previewReader.onload = (ev) => {
+    if (avatarSettled) return;
     document.getElementById('sv-av').innerHTML =
       `<img src="${safeUrl(ev.target.result)}" alt="">`;
   };
@@ -1010,6 +1012,7 @@ async function handleAvatarUpload(event) {
       .eq('handle', curStore.handle);
     if (updateError) throw updateError;
     curStore.logo_url = logoUrl;
+    avatarSettled = true;
     const avEl = document.getElementById('sv-av');
     avEl.innerHTML = `<img src="${safeUrl(logoUrl)}"
           alt="${esc(curStore.brand_name)}"
@@ -1021,6 +1024,7 @@ async function handleAvatarUpload(event) {
     showToast('Logo updated! 🎉');
   } catch(err) {
     console.error('Avatar upload error:', err);
+    avatarSettled = true;
     const avRevert = document.getElementById('sv-av');
     if (prevLogo) {
       avRevert.innerHTML = `<img src="${safeUrl(prevLogo)}" alt="">`;
