@@ -707,7 +707,7 @@ function renderMarket(stores) {
     const bg = `linear-gradient(145deg, ${bgColors[0]}, ${bgColors[1]}, ${bgColors[2]}, ${bgColors[3]})`;
     const n = (s.products || []).length;
     return `<div class="store-card" onclick="openStore(${jsArg(s.handle)})">
-      <div class="sc-cover" style="background:${bg}"><div class="sc-avatar">${esc(s.emoji)}</div></div>
+      <div class="sc-cover" style="background:${bg}"><div class="sc-avatar">${s.logo_url ? `<img src="${safeUrl(s.logo_url)}" alt="${esc(s.brand_name)}" loading="lazy">` : esc(s.emoji)}</div></div>
       <div class="sc-body">
         <div class="sc-name">${esc(s.brand_name)}</div>
         <div class="sc-tagline">${esc(s.tagline)}</div>
@@ -979,6 +979,13 @@ async function handleAvatarUpload(event) {
     showToast('Image must be under 5MB');
     return;
   }
+  const prevLogo = curStore.logo_url || null;
+  const previewReader = new FileReader();
+  previewReader.onload = (ev) => {
+    document.getElementById('sv-av').innerHTML =
+      `<img src="${safeUrl(ev.target.result)}" alt="">`;
+  };
+  previewReader.readAsDataURL(file);
   showToast('Processing logo…');
   let logoFile = file;
   try {
@@ -1014,6 +1021,12 @@ async function handleAvatarUpload(event) {
     showToast('Logo updated! 🎉');
   } catch(err) {
     console.error('Avatar upload error:', err);
+    const avRevert = document.getElementById('sv-av');
+    if (prevLogo) {
+      avRevert.innerHTML = `<img src="${safeUrl(prevLogo)}" alt="">`;
+    } else {
+      avRevert.textContent = curStore.emoji;
+    }
     showToast('Upload failed — please try again');
   }
   event.target.value = '';
