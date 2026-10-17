@@ -528,6 +528,9 @@ function openPanel() {
   const fab = document.getElementById('chat-fab');
   if (fab) fab.classList.remove('visible');
   const saved = JSON.parse(localStorage.getItem('nukkad_user') || '{}');
+  closeProfileEdit();
+  document.getElementById('pp-edit-btn').style.display =
+    currentAuthUser ? 'inline-block' : 'none';
 
   if (!currentAuthUser) {
     // NOT logged in — show login prompt panel
@@ -578,6 +581,85 @@ function openPanel() {
 function closePanel() {
   document.getElementById('profile-panel').classList.remove('open');
   document.getElementById('panel-overlay').classList.remove('open');
+}
+
+// ═══════════════════════════════════
+// EDIT PERSONAL DETAILS (My Account)
+// ═══════════════════════════════════
+function openProfileEdit() {
+  if (!currentAuthUser) return;
+  const saved = JSON.parse(localStorage.getItem('nukkad_user') || '{}');
+  document.getElementById('pe-name').value  = saved.name  || '';
+  document.getElementById('pe-phone').value = saved.phone || '';
+  document.getElementById('pe-area').value  = saved.area  || '';
+  document.getElementById('pe-city').value  = saved.city  || '';
+  document.getElementById('pp-details-view').style.display = 'none';
+  document.getElementById('pp-details-edit').style.display = 'block';
+  document.getElementById('pp-edit-btn').style.visibility = 'hidden';
+}
+
+function closeProfileEdit() {
+  document.getElementById('pp-details-view').style.display = 'block';
+  document.getElementById('pp-details-edit').style.display = 'none';
+  document.getElementById('pp-edit-btn').style.visibility = 'visible';
+  ['pe-name','pe-phone'].forEach(id =>
+    document.getElementById(id).style.borderColor = '');
+}
+
+async function saveProfileEdit() {
+  if (!currentAuthUser) return;
+  const nameEl  = document.getElementById('pe-name');
+  const phoneEl = document.getElementById('pe-phone');
+  const name  = nameEl.value.trim();
+  const phone = phoneEl.value.replace(/[\s-]/g, '');
+  const area  = document.getElementById('pe-area').value.trim();
+  const city  = document.getElementById('pe-city').value.trim();
+
+  nameEl.style.borderColor = name ? '' : 'var(--rose)';
+  phoneEl.style.borderColor = phone ? '' : 'var(--rose)';
+  if (!name || !phone) {
+    (name ? phoneEl : nameEl).focus();
+    showToast('Please fill your name & WhatsApp number');
+    return;
+  }
+
+  const email = currentAuthUser.email;
+  const btn = document.getElementById('pe-save-btn');
+  btn.textContent = 'Saving…'; btn.disabled = true;
+  const { error } = await sb.from('seller_profiles').upsert(
+    { email, name, phone, area, city },
+    { onConflict: 'email' }
+  );
+  btn.textContent = 'Save'; btn.disabled = false;
+
+  if (error) {
+    console.error('Profile save error:', error);
+    showToast('Save failed: ' + (error.message || error.code || 'unknown error'));
+    return;
+  }
+
+  // Keep auth metadata in sync — it's the fallback on next login
+  sb.auth.updateUser({ data: { name, phone, area, city } })
+    .then(({ error: metaErr }) => {
+      if (metaErr) console.warn('Auth metadata update failed:', metaErr);
+    });
+
+  const saved = JSON.parse(localStorage.getItem('nukkad_user') || '{}');
+  Object.assign(saved, { name, phone, area, city, email });
+  localStorage.setItem('nukkad_user', JSON.stringify(saved));
+  USER = saved;
+
+  document.getElementById('pp-name').textContent  = name;
+  document.getElementById('pp-phone').textContent = phone;
+  document.getElementById('pp-area').textContent  = area || '—';
+  document.getElementById('pp-city').textContent  = city || '—';
+  const initial = name.charAt(0).toUpperCase();
+  if (!saved.avatar_url) document.getElementById('pp-av').textContent = initial;
+  const navAv = document.getElementById('nav-av-btn');
+  if (navAv) navAv.textContent = initial;
+
+  closeProfileEdit();
+  showToast('Details saved!');
 }
 
 function goMyStore() {

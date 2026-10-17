@@ -26,7 +26,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<link rel="stylesheet" href="css/style.css?v=8">
+<link rel="stylesheet" href="css/style.css?v=9">
 </head>
 <body>
 
@@ -1113,10 +1113,42 @@
     <div class="pp-user-email" id="pp-email">—</div>
   </div>
   <div class="pp-section">
-    <div class="pp-section-title">Personal details</div>
-    <div class="pp-row"><span class="pp-row-label">WhatsApp</span><span class="pp-row-val" id="pp-phone">—</span></div>
-    <div class="pp-row"><span class="pp-row-label">Area</span><span class="pp-row-val" id="pp-area">—</span></div>
-    <div class="pp-row"><span class="pp-row-label">City</span><span class="pp-row-val" id="pp-city">—</span></div>
+    <div class="pp-section-title pp-section-head">
+      Personal details
+      <button class="pp-edit-btn" id="pp-edit-btn"
+              onclick="openProfileEdit()"
+              style="display:none">Edit</button>
+    </div>
+    <div id="pp-details-view">
+      <div class="pp-row"><span class="pp-row-label">WhatsApp</span><span class="pp-row-val" id="pp-phone">—</span></div>
+      <div class="pp-row"><span class="pp-row-label">Area</span><span class="pp-row-val" id="pp-area">—</span></div>
+      <div class="pp-row"><span class="pp-row-label">City</span><span class="pp-row-val" id="pp-city">—</span></div>
+    </div>
+    <div id="pp-details-edit" style="display:none">
+      <div class="fg">
+        <label class="fl" for="pe-name">Name</label>
+        <input type="text" class="fi" id="pe-name" maxlength="60">
+      </div>
+      <div class="fg">
+        <label class="fl" for="pe-phone">WhatsApp Number</label>
+        <input type="tel" class="fi" id="pe-phone" maxlength="20"
+               placeholder="e.g. 98765 43210">
+      </div>
+      <div class="fg">
+        <label class="fl" for="pe-area">Area</label>
+        <input type="text" class="fi" id="pe-area" maxlength="60">
+      </div>
+      <div class="fg">
+        <label class="fl" for="pe-city">City</label>
+        <input type="text" class="fi" id="pe-city" maxlength="60">
+      </div>
+      <div class="pp-edit-actions">
+        <button class="pp-edit-cancel"
+                onclick="closeProfileEdit()">Cancel</button>
+        <button class="dash-save-btn" id="pe-save-btn"
+                onclick="saveProfileEdit()">Save</button>
+      </div>
+    </div>
   </div>
   <div class="pp-section" style="border-top:1px solid var(--border-light)">
     <div class="pp-section-title">My store</div>
@@ -1147,7 +1179,7 @@
 
 <div id="toast"></div>
 
-<script src="js/app.js?v=14"></script>
+<script src="js/app.js?v=15"></script>
 <!-- ════ FOOTER ════ -->
 <footer id="site-footer" style="background:var(--ink);color:var(--paper);padding:3rem clamp(1rem,5%,3rem) 2rem;margin-top:0;">
   <div style="max-width:1100px;margin:0 auto;">
