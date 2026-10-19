@@ -329,6 +329,8 @@ window.addEventListener('load', async () => {
 });
 
 window.addEventListener('popstate', (e) => {
+  // Photo viewer open — back only closes the viewer
+  if (ivHandlePopState(e)) return;
   const state = e.state || {};
   const page = state.page || 'home';
 
@@ -2677,6 +2679,7 @@ let _ivZ = { s: 1, x: 0, y: 0 }; // zoom of visible photo
 const _ivPtrs = new Map();
 let _ivPinch = null, _ivPan = null, _ivDown = null, _ivLastTap = null;
 let _ivBound = false;
+let _ivHistory = false;  // viewer added a history entry
 const IV_MAX = 4;
 
 function openImageViewer(i) {
@@ -2687,6 +2690,9 @@ function openImageViewer(i) {
     `<div class="iv-slide"><img class="iv-img" src="${safeUrl(u)}" alt="" draggable="false"></div>`
   ).join('');
   document.getElementById('img-viewer').classList.add('open');
+  // Own history entry so the phone's back button closes only the viewer
+  history.pushState(Object.assign({}, history.state, { iv: true }), '', location.href);
+  _ivHistory = true;
   _ivIdx = i;
   _ivZ = { s: 1, x: 0, y: 0 };
   track.classList.remove('zoomed');
@@ -2698,7 +2704,25 @@ function openImageViewer(i) {
   };
 }
 
+// ✕ / backdrop / Esc — go back so our history entry is removed;
+// the popstate below then does the actual close
 function closeImageViewer() {
+  if (_ivHistory) { history.back(); return; }
+  ivCloseNow();
+}
+
+// Called first by the popstate handler. Returns true if handled.
+function ivHandlePopState(e) {
+  if (document.getElementById('img-viewer').classList.contains('open')) {
+    _ivHistory = false;
+    ivCloseNow();
+    return true;
+  }
+  // Forward-navigating onto a stale viewer entry — ignore it
+  return !!(e.state && e.state.iv);
+}
+
+function ivCloseNow() {
   ivReset();
   _ivPtrs.clear();
   _ivPinch = _ivPan = _ivDown = _ivLastTap = null;
