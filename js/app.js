@@ -3643,12 +3643,13 @@ function s0to1() {
   const city = document.getElementById('u-city').value.trim();
 
   let ok = true;
-  [['u-name','cerr-uname'],['u-email','cerr-uemail'],['u-phone','cerr-uphone'],['u-area','cerr-uarea'],['u-city','cerr-ucity']].forEach(([id,eid]) => {
+  const missing = [];
+  [['u-name','cerr-uname','Name'],['u-email','cerr-uemail','Email'],['u-phone','cerr-uphone','WhatsApp Number'],['u-area','cerr-uarea','Area'],['u-city','cerr-ucity','City']].forEach(([id,eid,label]) => {
     const v = document.getElementById(id).value.trim();
     document.getElementById(eid).style.display = v ? 'none' : 'block';
-    if(!v) ok = false;
+    if(!v) { ok = false; missing.push([label, id]); }
   });
-  if (!ok) return;
+  if (!ok) { csShowMissing(missing); return; }
 
   USER = {name, email, phone, area, city};
   NS.whatsapp = phone;
@@ -3669,15 +3670,29 @@ function csShow(n) {
   window.scrollTo(0,0);
 }
 
+// Pop-up naming the missed fields + scroll to the first one
+function csShowMissing(missing) {
+  showToast('Please fill in: ' + missing.map(m => m[0]).join(', '));
+  const first = document.getElementById(missing[0][1]);
+  if (first) {
+    first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (first.focus) first.focus({ preventScroll: true });
+  }
+}
+
 function s1Validate() {
   let ok = true;
-  [['c-bname','cerr-name'],['c-tag','cerr-tag']].forEach(([id,eid]) => {
+  const missing = [];
+  // Tagline is optional — only brand name is required here
+  [['c-bname','cerr-name','Brand Name']].forEach(([id,eid,label]) => {
     const v = document.getElementById(id).value.trim();
     document.getElementById(eid).style.display = v ? 'none' : 'block';
-    if(!v) ok=false;
+    if(!v) { ok=false; missing.push([label, id]); }
   });
   const ce = document.getElementById('cerr-cat');
-  if(!NS.category){ce.style.display='block';ok=false;} else ce.style.display='none';
+  if(!NS.category){ce.style.display='block';ok=false;missing.push(['Category','cerr-cat']);} else ce.style.display='none';
+  document.getElementById('cerr-tag').style.display = 'none';
+  if (!ok) csShowMissing(missing);
   return ok;
 }
 
