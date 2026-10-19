@@ -2667,6 +2667,191 @@ function pdGoTo(i) {
   track.scrollTo({ left: i * track.clientWidth, behavior: 'smooth' });
 }
 
+// ═══════════════════════════════════
+// PRODUCT PHOTO VIEWER
+// Full-screen, pinch / double-tap / wheel zoom
+// ═══════════════════════════════════
+let _pdImgs = [];        // photos of the open product
+let _ivIdx = 0;          // visible photo in the viewer
+let _ivZ = { s: 1, x: 0, y: 0 }; // zoom of visible photo
+const _ivPtrs = new Map();
+let _ivPinch = null, _ivPan = null, _ivDown = null, _ivLastTap = null;
+let _ivBound = false;
+const IV_MAX = 4;
+
+function openImageViewer(i) {
+  if (!_pdImgs.length) return;
+  if (!_ivBound) { ivBindEvents(); _ivBound = true; }
+  const track = document.getElementById('iv-track');
+  track.innerHTML = _pdImgs.map(u =>
+    `<div class="iv-slide"><img class="iv-img" src="${safeUrl(u)}" alt="" draggable="false"></div>`
+  ).join('');
+  document.getElementById('img-viewer').classList.add('open');
+  _ivIdx = i;
+  _ivZ = { s: 1, x: 0, y: 0 };
+  track.classList.remove('zoomed');
+  track.scrollLeft = i * track.clientWidth;
+  ivSetCount();
+  track.onscroll = () => {
+    const idx = Math.round(track.scrollLeft / track.clientWidth);
+    if (idx !== _ivIdx) { ivReset(); _ivIdx = idx; ivSetCount(); }
+  };
+}
+
+function closeImageViewer() {
+  ivReset();
+  _ivPtrs.clear();
+  _ivPinch = _ivPan = _ivDown = _ivLastTap = null;
+  document.getElementById('img-viewer').classList.remove('open');
+  document.getElementById('iv-track').innerHTML = '';
+}
+
+function ivSetCount() {
+  const n = _pdImgs.length;
+  document.getElementById('iv-count').textContent =
+    (n > 1 ? `${_ivIdx + 1} / ${n} · ` : '') + 'Pinch or double-tap to zoom';
+}
+
+function ivImg() {
+  return document.querySelectorAll('#iv-track .iv-img')[_ivIdx];
+}
+
+function ivApply(animate) {
+  const img = ivImg();
+  if (!img) return;
+  img.classList.toggle('iv-anim', !!animate);
+  img.style.transform = _ivZ.s > 1
+    ? `translate(${_ivZ.x}px,${_ivZ.y}px) scale(${_ivZ.s})` : '';
+  document.getElementById('iv-track')
+    .classList.toggle('zoomed', _ivZ.s > 1);
+}
+
+function ivReset() {
+  _ivZ = { s: 1, x: 0, y: 0 };
+  ivApply(false);
+}
+
+// Keep the zoomed photo covering its own box (no empty gaps)
+function ivClamp() {
+  const img = ivImg();
+  if (!img) return;
+  _ivZ.s = Math.min(IV_MAX, Math.max(1, _ivZ.s));
+  if (_ivZ.s <= 1.01) { _ivZ = { s: 1, x: 0, y: 0 }; return; }
+  const w = img.offsetWidth, h = img.offsetHeight;
+  _ivZ.x = Math.min(0, Math.max(w - w * _ivZ.s, _ivZ.x));
+  _ivZ.y = Math.min(0, Math.max(h - h * _ivZ.s, _ivZ.y));
+}
+
+// Zoom to scale s keeping screen point (cx, cy) fixed
+function ivZoomAt(cx, cy, s) {
+  const img = ivImg();
+  if (!img) return;
+  const r = img.getBoundingClientRect();
+  const ox = r.left - _ivZ.x, oy = r.top - _ivZ.y;
+  const vx = (cx - ox - _ivZ.x) / _ivZ.s;
+  const vy = (cy - oy - _ivZ.y) / _ivZ.s;
+  s = Math.min(IV_MAX, Math.max(1, s));
+  _ivZ = { s, x: cx - ox - s * vx, y: cy - oy - s * vy };
+  ivClamp();
+}
+
+function ivBindEvents() {
+  const viewer = document.getElementById('img-viewer');
+  const track = document.getElementById('iv-track');
+
+  track.addEventListener('pointerdown', e => {
+    _ivPtrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    _ivDown = { x: e.clientX, y: e.clientY, t: Date.now() };
+    if (_ivPtrs.size === 2) {
+      // Pinch start — remember the photo point under the fingers
+      const [a, b] = [..._ivPtrs.values()];
+      const img = ivImg();
+      if (!img) return;
+      const r = img.getBoundingClientRect();
+      const ox = r.left - _ivZ.x, oy = r.top - _ivZ.y;
+      const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      _ivPinch = {
+        dist: Math.hypot(a.x - b.x, a.y - b.y) || 1,
+        s: _ivZ.s, ox, oy,
+        vx: (mx - ox - _ivZ.x) / _ivZ.s,
+        vy: (my - oy - _ivZ.y) / _ivZ.s,
+      };
+      _ivPan = null;
+      _ivDown = null;
+    } else if (_ivPtrs.size === 1 && _ivZ.s > 1) {
+      _ivPan = { sx: e.clientX, sy: e.clientY, x: _ivZ.x, y: _ivZ.y };
+      try { track.setPointerCapture(e.pointerId); } catch(_) {}
+    }
+  });
+
+  track.addEventListener('pointermove', e => {
+    if (!_ivPtrs.has(e.pointerId)) return;
+    _ivPtrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (_ivPinch && _ivPtrs.size >= 2) {
+      const [a, b] = [..._ivPtrs.values()];
+      const p = _ivPinch;
+      const s = Math.min(IV_MAX, Math.max(1,
+        p.s * Math.hypot(a.x - b.x, a.y - b.y) / p.dist));
+      const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      _ivZ = { s, x: mx - p.ox - s * p.vx, y: my - p.oy - s * p.vy };
+      ivClamp();
+      ivApply(false);
+    } else if (_ivPan) {
+      _ivZ.x = _ivPan.x + (e.clientX - _ivPan.sx);
+      _ivZ.y = _ivPan.y + (e.clientY - _ivPan.sy);
+      ivClamp();
+      ivApply(false);
+    }
+  });
+
+  const end = e => {
+    if (!_ivPtrs.has(e.pointerId)) return;
+    _ivPtrs.delete(e.pointerId);
+    if (_ivPtrs.size < 2) _ivPinch = null;
+    if (_ivPtrs.size === 0) _ivPan = null;
+
+    // Double-tap: zoom in at the tap, or back out
+    const d = _ivDown;
+    _ivDown = null;
+    if (e.type !== 'pointerup' || !d || _ivPtrs.size) return;
+    const moved = Math.hypot(e.clientX - d.x, e.clientY - d.y);
+    if (moved > 10 || Date.now() - d.t > 300) { _ivLastTap = null; return; }
+    const last = _ivLastTap;
+    if (last && Date.now() - last.t < 300 &&
+        Math.hypot(e.clientX - last.x, e.clientY - last.y) < 30) {
+      _ivLastTap = null;
+      if (_ivZ.s > 1) _ivZ = { s: 1, x: 0, y: 0 };
+      else ivZoomAt(e.clientX, e.clientY, 2.5);
+      ivApply(true);
+    } else {
+      _ivLastTap = { x: e.clientX, y: e.clientY, t: Date.now() };
+    }
+  };
+  track.addEventListener('pointerup', end);
+  track.addEventListener('pointercancel', end);
+
+  // Desktop: mouse wheel / trackpad pinch zooms
+  track.addEventListener('wheel', e => {
+    if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+    e.preventDefault();
+    ivZoomAt(e.clientX, e.clientY,
+      _ivZ.s * (e.deltaY < 0 ? 1.15 : 1 / 1.15));
+    ivApply(false);
+  }, { passive: false });
+
+  // Tap on the dark area (not the photo) closes when not zoomed
+  viewer.addEventListener('click', e => {
+    if (_ivZ.s > 1) return;
+    if (e.target.closest('.iv-img') || e.target.closest('.iv-close')) return;
+    closeImageViewer();
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && viewer.classList.contains('open'))
+      closeImageViewer();
+  });
+}
+
 // Product detail overlay
 function openProductDetail(handle, productId) {
   const s = allStores.find(x => x.handle === handle);
@@ -2700,11 +2885,12 @@ function openProductDetail(handle, productId) {
   }
 
   // Square swipe carousel; dots follow the visible slide
+  _pdImgs = allImgs;
   const track = document.getElementById('pd-track');
   const dots = document.getElementById('pd-dots');
   track.innerHTML = allImgs.length
     ? allImgs.map((url, i) =>
-        `<div class="pd-slide"><img src="${safeUrl(url)}" alt="${esc(p.name)}"${i ? ' loading="lazy"' : ''} decoding="async"></div>`
+        `<div class="pd-slide"><img src="${safeUrl(url)}" alt="${esc(p.name)}"${i ? ' loading="lazy"' : ''} decoding="async" onclick="openImageViewer(${i})"></div>`
       ).join('')
     : `<div class="pd-slide pd-slide-empty">${esc(s.emoji || '🌿')}</div>`;
   track.scrollLeft = 0;
@@ -3764,7 +3950,7 @@ let apmImageFile = null;
 // 1080×1080 WebP (JPEG fallback), q 0.8
 // ═══════════════════════════════════
 
-const CROP_OUTPUT = 1080;
+const CROP_OUTPUT = 1440;
 const CROP_MAX_ZOOM = 4;
 let _crop = null;
 let _cropBound = false;
@@ -3916,7 +4102,7 @@ async function cropDone() {
     ctx.drawImage(c.img, -c.x / s, -c.y / s, c.F / s, c.F / s,
       0, 0, CROP_OUTPUT, CROP_OUTPUT);
     const toBlob = type =>
-      new Promise(r => canvas.toBlob(r, type, 0.8));
+      new Promise(r => canvas.toBlob(r, type, 0.92));
     // Browsers that can't encode WebP return PNG instead
     let blob = await toBlob('image/webp');
     if (!blob || blob.type !== 'image/webp') blob = await toBlob('image/jpeg');
