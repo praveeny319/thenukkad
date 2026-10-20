@@ -1,0 +1,87 @@
+<div class="pg" id="pg-create">
+  <!-- STEP 0: Personal Details -->
+  <div id="s0" style="display:none">
+    <div class="progress-bar"><div class="pb-inner">
+      <div class="pb-step cur"><div class="pb-circle">1</div><div class="pb-label">You</div></div>
+      <div class="pb-step"><div class="pb-circle">2</div><div class="pb-label">Brand</div></div>
+      <div class="pb-step"><div class="pb-circle">3</div><div class="pb-label">Products</div></div>
+      <div class="pb-step"><div class="pb-circle">4</div><div class="pb-label">Preview</div></div>
+    </div></div>
+    <div class="create-body">
+      <h1 class="create-h serif">First, tell us about you 👋</h1>
+      <p class="create-sub">We need a few details to set up your seller account.</p>
+      <div class="cf"><label class="cl">Your Full Name <span>*</span></label><input type="text" class="ci" id="u-name" placeholder="e.g. Priya Sharma"><div class="cerr" id="cerr-uname">Please enter your name</div></div>
+      <div class="cf"><label class="cl">Email Address <span>*</span></label><input type="email" class="ci" id="u-email" placeholder="e.g. priya@gmail.com"><div class="cerr" id="cerr-uemail">Please enter your email</div></div>
+      <div class="cf"><label class="cl">WhatsApp Number <span>*</span></label><input type="tel" class="ci" id="u-phone" placeholder="e.g. 98765 43210"><div class="chint">Customers will send orders to this number</div><div class="cerr" id="cerr-uphone">Please enter your WhatsApp number</div></div>
+      <div class="cf"><label class="cl">Area <span>*</span></label><input type="text" class="ci" id="u-area" placeholder="e.g. Andheri East"><div class="cerr" id="cerr-uarea">Please enter your area</div></div>
+      <div class="cf"><label class="cl">City <span>*</span></label><input type="text" class="ci" id="u-city" placeholder="e.g. Mumbai"><div class="cerr" id="cerr-ucity">Please enter your city</div></div>
+    </div>
+    <div class="form-foot"><button class="foot-next" onclick="s0to1()">Continue — Create Your Store →</button></div>
+  </div>
+
+  <div id="s1">
+    <div class="progress-bar"><div class="pb-inner">
+      <div class="pb-step done"><div class="pb-circle">✓</div><div class="pb-label">You</div></div>
+      <div class="pb-step cur"><div class="pb-circle">2</div><div class="pb-label">Brand</div></div>
+      <div class="pb-step"><div class="pb-circle">3</div><div class="pb-label">Products</div></div>
+      <div class="pb-step"><div class="pb-circle">4</div><div class="pb-label">Preview</div></div>
+    </div></div>
+    <div class="create-body">
+      <h1 class="create-h serif">Tell us about your brand 🌿</h1>
+      <p class="create-sub">Your storefront — make it feel like you.</p>
+      <div class="cf"><label class="cl">Brand Name <span>*</span></label><input type="text" class="ci" id="c-bname" placeholder="e.g. Nature's Glow" maxlength="40"><div class="cerr" id="cerr-name">Please enter your brand name</div></div>
+      <div class="cf"><label class="cl">Pick an Emoji <span>*</span></label><div class="emoji-picker" id="ep"></div></div>
+      <div class="cf"><label class="cl">Category <span>*</span></label><div class="chips" id="c-cats">
+        <div class="chip" onclick="pickCat(this)">💆 Hair & Skincare</div>
+        <div class="chip" onclick="pickCat(this)">🍳 Home-cooked Food</div>
+        <div class="chip" onclick="pickCat(this)">🧁 Baked Goods</div>
+        <div class="chip" onclick="pickCat(this)">👗 Handmade Clothing</div>
+        <div class="chip" onclick="pickCat(this)">🕯️ Home Decor</div>
+        <div class="chip" onclick="pickCat(this)">💍 Jewellery</div>
+        <div class="chip" onclick="pickCat(this)">🌿 Herbal Products</div>
+        <div class="chip" onclick="pickCat(this)">📦 Other</div>
+      </div><div class="cerr" id="cerr-cat">Please select a category</div></div>
+      <div class="cf"><label class="cl">Tagline (optional)</label><input type="text" class="ci" id="c-tag" placeholder="e.g. Natural hair care — safe, herbal, effective" maxlength="80"><div class="cerr" id="cerr-tag">Please add a tagline</div></div>
+      <div class="cf"><label class="cl">City</label><input type="text" class="ci" id="c-city" placeholder="e.g. Mumbai"></div>
+
+    </div>
+    <div class="form-foot">
+      <button class="foot-back" onclick="csShow(0)">← Back</button>
+      <button class="foot-next" onclick="s1to2()">Continue — Add Products →</button>
+    </div>
+  </div>
+
+  <div id="s2" style="display:none">
+    <div class="progress-bar"><div class="pb-inner">
+      <div class="pb-step done"><div class="pb-circle">✓</div><div class="pb-label">You</div></div>
+      <div class="pb-step done"><div class="pb-circle">✓</div><div class="pb-label">Brand</div></div>
+      <div class="pb-step cur"><div class="pb-circle">3</div><div class="pb-label">Products</div></div>
+      <div class="pb-step"><div class="pb-circle">4</div><div class="pb-label">Preview</div></div>
+    </div></div>
+    <div class="create-body">
+      <h1 class="create-h serif">List your products 📷</h1>
+      <p class="create-sub">Add at least 1 product. Upload a photo to make it look great!</p>
+      <div class="prod-list" id="prod-list"></div>
+      <button class="add-prod-btn" onclick="addProd()">＋ Add a Product</button>
+    </div>
+    <div class="form-foot">
+      <button class="foot-back" onclick="csShow(1)">← Back</button>
+      <button class="foot-next" onclick="s2to3()">Preview My Store →</button>
+    </div>
+  </div>
+
+  <div id="s3" style="display:none">
+    <div class="progress-bar"><div class="pb-inner">
+      <div class="pb-step done"><div class="pb-circle">✓</div><div class="pb-label">You</div></div>
+      <div class="pb-step done"><div class="pb-circle">✓</div><div class="pb-label">Brand</div></div>
+      <div class="pb-step done"><div class="pb-circle">✓</div><div class="pb-label">Products</div></div>
+      <div class="pb-step cur"><div class="pb-circle">4</div><div class="pb-label">Preview</div></div>
+    </div></div>
+    <div id="pv-content"></div>
+    <div class="form-foot">
+      <button class="foot-back" onclick="csShow(2); const pb=document.getElementById('publish-btn'); if(pb){pb.disabled=false;pb.innerHTML='🚀 Publish My Store';}">← Edit</button>
+      <button class="foot-next" id="publish-btn" onclick="publish()">🚀 Publish My Store</button>
+    </div>
+  </div>
+</div>
+

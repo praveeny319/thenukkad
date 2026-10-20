@@ -182,7 +182,7 @@ let productImageFiles = {}; // { prodId: File }
 // ═══════════════════════════════════
 // INIT
 // ═══════════════════════════════════
-window.addEventListener('load', async () => {
+const initializeApp = async () => {
   buildEmojiPicker();
 
   // Handle password reset redirect
@@ -326,7 +326,13 @@ window.addEventListener('load', async () => {
       );
     }
   }
-});
+};
+
+if (document.readyState === 'complete') {
+  window.setTimeout(initializeApp, 0);
+} else {
+  window.addEventListener('load', initializeApp, { once: true });
+}
 
 window.addEventListener('popstate', (e) => {
   // Photo viewer open — back only closes the viewer

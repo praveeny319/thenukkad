@@ -1,0 +1,106 @@
+<div class="pg" id="pg-admin">
+  <div class="admin-wrap">
+
+    <!-- Header -->
+    <div class="admin-hdr">
+      <div>
+        <div class="admin-title">
+          Nukkad Admin
+        </div>
+        <div class="admin-sub">
+          Only visible to you, Praveen.
+        </div>
+      </div>
+      <button class="admin-refresh-btn"
+              onclick="loadAdminData()">
+        ↻ Refresh
+      </button>
+    </div>
+
+    <!-- Overview statstics -->
+    <div class="admin-stats-grid" id="admin-stats">
+      <div class="admin-stat-card">
+        <div class="admin-stat-num"
+             id="adm-total-stores">—</div>
+        <div class="admin-stat-label">
+          Total Stores
+        </div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="admin-stat-num"
+             id="adm-active-stores">—</div>
+        <div class="admin-stat-label">
+          Taking Orders
+        </div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="admin-stat-num"
+             id="adm-total-orders">—</div>
+        <div class="admin-stat-label">
+          Total Orders
+        </div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="admin-stat-num"
+             id="adm-week-orders">—</div>
+        <div class="admin-stat-label">
+          This Week
+        </div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="admin-stat-num"
+             id="adm-gmv">—</div>
+        <div class="admin-stat-label">
+          Est. GMV
+        </div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="admin-stat-num"
+             id="adm-total-users">—</div>
+        <div class="admin-stat-label">
+          Registered Users
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="admin-tabs">
+      <button class="admin-tab on"
+              id="adm-tab-stores"
+              onclick="switchAdminTab('stores',this)">
+        Stores
+      </button>
+      <button class="admin-tab"
+              id="adm-tab-orders"
+              onclick="switchAdminTab('orders',this)">
+        Orders
+      </button>
+      <button class="admin-tab"
+              id="adm-tab-users"
+              onclick="switchAdminTab('users',this)">
+        Users
+      </button>
+    </div>
+
+    <!-- Stores panel -->
+    <div id="adm-panel-stores" class="admin-panel">
+      <div id="adm-stores-list"></div>
+    </div>
+
+    <!-- Orders panel -->
+    <div id="adm-panel-orders"
+         class="admin-panel"
+         style="display:none">
+      <div id="adm-orders-list"></div>
+    </div>
+
+    <!-- Users panel -->
+    <div id="adm-panel-users"
+         class="admin-panel"
+         style="display:none">
+      <div id="adm-users-list"></div>
+    </div>
+
+  </div>
+</div>
+
