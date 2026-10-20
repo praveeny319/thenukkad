@@ -1,0 +1,78 @@
+<div id="nukkad-story-overlay"
+     onclick="closeNukkadStory()"
+     style="display:none;position:fixed;inset:0;
+            z-index:9999;
+            background:#0d0905;
+            flex-direction:column;
+            align-items:center;justify-content:center;
+            padding:2rem;cursor:pointer;
+            opacity:0;transition:opacity 0.6s ease;">
+
+  <!-- Skip hint -->
+  <div style="position:absolute;top:1.5rem;right:1.5rem;
+              font-size:0.72rem;font-weight:600;
+              letter-spacing:1.5px;text-transform:uppercase;
+              color:rgba(255,255,255,0.25);
+              font-family:'Plus Jakarta Sans',sans-serif;">
+    Tap anywhere to skip
+  </div>
+
+  <!-- Story container -->
+  <div id="ns-content"
+       style="max-width:560px;width:100%;
+              text-align:center;">
+
+    <!-- Logo mark -->
+    <div id="ns-logo"
+         style="font-family:'Cormorant Garamond',serif;
+                font-size:1rem;font-weight:700;
+                letter-spacing:3px;text-transform:uppercase;
+                color:rgba(255,255,255,0.35);
+                margin-bottom:3rem;
+                opacity:0;transition:opacity 0.8s ease;">
+      NUKKAD ·
+    </div>
+
+    <!-- Lines container -->
+    <div id="ns-lines" style="display:flex;
+                               flex-direction:column;
+                               gap:0.1rem;"></div>
+
+    <!-- End card — hidden until the end -->
+    <div id="ns-end-card"
+         style="opacity:0;transition:opacity 1s ease;
+                margin-top:2.5rem;">
+      <div style="font-family:'Cormorant Garamond',serif;
+                  font-size:clamp(2rem,5vw,3rem);
+                  font-weight:700;color:white;
+                  margin-bottom:0.5rem;line-height:1.1;">
+        Nukkad.
+      </div>
+      <div style="font-size:clamp(0.9rem,2.5vw,1.1rem);
+                  color:rgba(255,255,255,0.6);
+                  font-family:'Plus Jakarta Sans',sans-serif;
+                  font-weight:400;line-height:1.7;
+                  margin-bottom:2rem;">
+        Your store. Your neighbourhood. Your customers.<br>
+        <em style="color:rgba(255,255,255,0.4);
+                   font-style:italic;">
+          — Online, in 5 minutes.
+        </em>
+      </div>
+      <button onclick="closeNukkadStory();handleCreateClick('signup');
+                       event.stopPropagation();"
+              style="background:var(--gold,#c8902a);
+                     color:#0d0905;border:none;
+                     font-family:'Plus Jakarta Sans',sans-serif;
+                     font-size:0.9rem;font-weight:700;
+                     padding:0.85rem 2rem;
+                     border-radius:100px;cursor:pointer;
+                     transition:all 0.2s;
+                     letter-spacing:0.3px;">
+        Start your store free →
+      </button>
+    </div>
+
+  </div>
+</div>
+

@@ -1,0 +1,522 @@
+<div id="auth-modal" onpointerdown="if(event.target===this)closeAuthModal()">
+  <div class="auth-box">
+    <div class="auth-top">
+      <div class="auth-tabs">
+        <button class="auth-tab on" id="auth-tab-login" onclick="switchAuthTab('login')">Log In</button>
+        <button class="auth-tab" id="auth-tab-signup" onclick="switchAuthTab('signup')">Sign Up</button>
+      </div>
+      <button type="button" class="auth-close" aria-label="Close" onclick="closeAuthModal()">✕</button>
+    </div>
+    <div class="auth-body">
+
+      <!-- LOGIN FORM -->
+      <div id="auth-login-form">
+        <div class="auth-title serif">Welcome back 👋</div>
+        <div class="auth-sub">Log in to manage your store</div>
+        <div class="auth-field">
+          <label class="auth-label">Email Address</label>
+          <input type="email" class="auth-input" id="login-email" placeholder="you@email.com">
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Password</label>
+<div style="position:relative;">
+  <input type="password" class="auth-input" id="login-pass" placeholder="Your password" onkeydown="if(event.key==='Enter')doLogin()" style="padding-right:2.8rem;">
+  <button type="button" onclick="togglePass('login-pass',this)" style="position:absolute;right:0.8rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--ink-light);">👁️</button>
+</div>
+        </div>
+        <div style="text-align:right;margin-bottom:0.5rem;">
+          <span onclick="switchAuthTab('forgot')" style="font-size:0.78rem;color:var(--earth);cursor:pointer;font-weight:600;">Forgot password?</span>
+        </div>
+        <div class="auth-err" id="login-err"></div>
+        <button class="auth-btn" id="login-btn" onclick="doLogin()">Log In</button>
+        <div class="auth-switch">Don't have an account? <span onclick="switchAuthTab('signup')">Sign up free</span></div>
+      </div>
+
+      <!-- SIGNUP FORM -->
+      <div id="auth-signup-form" style="display:none;">
+        <div class="auth-title serif">Create your account 🌿</div>
+        <div class="auth-sub">Join Nukkad and start selling</div>
+        <div class="auth-field">
+          <label class="auth-label">Full Name</label>
+          <input type="text" class="auth-input" id="signup-name" placeholder="e.g. Priya Sharma">
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Email Address</label>
+          <input type="email" class="auth-input" id="signup-email" placeholder="you@email.com">
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">WhatsApp Number</label>
+          <input type="tel" class="auth-input" id="signup-phone" placeholder="e.g. 98765 43210">
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Area</label>
+          <input type="text" class="auth-input" id="signup-area" placeholder="e.g. Andheri East">
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">City</label>
+          <input type="text" class="auth-input" id="signup-city" placeholder="e.g. Mumbai">
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Password</label>
+<div style="position:relative;">
+  <input type="password" class="auth-input" id="signup-pass" placeholder="Min 6 characters" onkeydown="if(event.key==='Enter')doSignup()" style="padding-right:2.8rem;">
+  <button type="button" onclick="togglePass('signup-pass',this)" style="position:absolute;right:0.8rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--ink-light);">👁️</button>
+</div>
+        </div>
+        <div class="auth-err" id="signup-err"></div>
+        <button class="auth-btn" id="signup-btn" onclick="doSignup()">Create Account</button>
+        <div class="auth-switch">Already have an account? <span onclick="switchAuthTab('login')">Log in</span></div>
+      </div>
+
+      <!-- FORGOT PASSWORD FORM -->
+      <div id="auth-forgot-form" style="display:none;">
+        <div class="auth-title serif">Reset password 🔑</div>
+        <div class="auth-sub">Enter your email and we'll send you a reset link.</div>
+        <div class="auth-field">
+          <label class="auth-label">Email Address</label>
+          <input type="email" class="auth-input" id="forgot-email" placeholder="you@email.com" onkeydown="if(event.key==='Enter')doForgotPassword()">
+        </div>
+        <div class="auth-err" id="forgot-err"></div>
+        <div class="auth-success" id="forgot-success" style="display:none;background:#E8F5E9;border:1px solid #A5D6A7;border-radius:8px;padding:0.8rem 1rem;font-size:0.84rem;color:#2E7D32;margin-bottom:1rem;line-height:1.5;">
+          ✓ Reset link sent! Check your email from noreply@mail.app.supabase.io.<br>
+          <span style="font-size:0.76rem;color:#4CAF50;">Check spam folder if not received.</span>
+        </div>
+        <button class="auth-btn" id="forgot-btn" onclick="doForgotPassword()">Send Reset Link</button>
+        <div class="auth-switch">Remember your password? <span onclick="switchAuthTab('login')">Log in</span></div>
+      </div>
+
+      <!-- RESET PASSWORD FORM (shown when user clicks email link) -->
+      <div id="auth-reset-form" style="display:none;">
+        <div class="auth-title serif">New password 🔒</div>
+        <div class="auth-sub">Enter your new password below.</div>
+        <div class="auth-field">
+          <label class="auth-label">New Password</label>
+          <div style="position:relative;">
+            <input type="password" class="auth-input" id="reset-pass" placeholder="Min 6 characters" onkeydown="if(event.key==='Enter')doResetPassword()" style="padding-right:2.8rem;">
+            <button type="button" onclick="togglePass('reset-pass',this)" style="position:absolute;right:0.8rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--ink-light);">👁️</button>
+          </div>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Confirm Password</label>
+          <div style="position:relative;">
+            <input type="password" class="auth-input" id="reset-pass-confirm" placeholder="Repeat password" onkeydown="if(event.key==='Enter')doResetPassword()" style="padding-right:2.8rem;">
+            <button type="button" onclick="togglePass('reset-pass-confirm',this)" style="position:absolute;right:0.8rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--ink-light);">👁️</button>
+          </div>
+        </div>
+        <div class="auth-err" id="reset-err"></div>
+        <button class="auth-btn" id="reset-btn" onclick="doResetPassword()">Update Password</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div id="success-ov">
+  <div class="so-confetti">🎉</div>
+  <h1 class="so-title serif">Your store is live!</h1>
+  <p class="so-sub">Share this link anywhere — WhatsApp, Instagram, or in your bio. Anyone who taps it sees your full store.</p>
+  <div class="so-link-box" onclick="copySuccessLink()">
+    <div class="so-link-text">🔗 thenukkad.store/<span id="so-hdl"></span></div>
+    <div class="so-copy-lbl">Tap to copy</div>
+  </div>
+  <div class="so-btns">
+    <button class="so-wa-btn" onclick="successWA()">💬 Share on WhatsApp</button>
+    <button class="so-view-btn" onclick="viewNewStore()">View My Store →</button>
+    <button class="so-qr-btn" onclick="showQR()">⬛ Get QR Code</button>
+  </div>
+</div>
+
+<div id="panel-overlay" onclick="closePanel()"></div>
+
+<div id="profile-panel">
+  <div class="pp-header">
+    <span class="pp-header-title serif">My Account</span>
+    <button class="pp-close" onclick="closePanel()">✕</button>
+  </div>
+  <div class="pp-avatar-row">
+    <div style="position:relative;display:inline-block;margin-bottom:0.5rem;">
+      <div class="pp-avatar" id="pp-av">?</div>
+      <button id="pp-avatar-upload-btn"
+              onclick="triggerProfilePhotoUpload()"
+              style="position:absolute;bottom:0;right:0;
+                     width:22px;height:22px;border-radius:50%;
+                     background:var(--ink);color:white;
+                     border:2px solid white;font-size:0.7rem;
+                     display:none;align-items:center;
+                     justify-content:center;cursor:pointer;
+                     line-height:1;">+</button>
+      <input type="file" id="pp-avatar-file-input"
+             accept="image/*" style="display:none"
+             onchange="handleProfilePhotoUpload(event)">
+    </div>
+    <div class="pp-user-name" id="pp-name">—</div>
+    <div class="pp-user-email" id="pp-email">—</div>
+  </div>
+  <div class="pp-section">
+    <div class="pp-section-title pp-section-head">
+      Personal details
+      <button class="pp-edit-btn" id="pp-edit-btn"
+              onclick="openProfileEdit()"
+              style="display:none">Edit</button>
+    </div>
+    <div id="pp-details-view">
+      <div class="pp-row"><span class="pp-row-label">WhatsApp</span><span class="pp-row-val" id="pp-phone">—</span></div>
+      <div class="pp-row"><span class="pp-row-label">Area</span><span class="pp-row-val" id="pp-area">—</span></div>
+      <div class="pp-row"><span class="pp-row-label">City</span><span class="pp-row-val" id="pp-city">—</span></div>
+    </div>
+    <div id="pp-details-edit" style="display:none">
+      <div class="fg">
+        <label class="fl" for="pe-name">Name</label>
+        <input type="text" class="fi" id="pe-name" maxlength="60">
+      </div>
+      <div class="fg">
+        <label class="fl" for="pe-phone">WhatsApp Number</label>
+        <input type="tel" class="fi" id="pe-phone" maxlength="20"
+               placeholder="e.g. 98765 43210">
+      </div>
+      <div class="fg">
+        <label class="fl" for="pe-area">Area</label>
+        <input type="text" class="fi" id="pe-area" maxlength="60">
+      </div>
+      <div class="fg">
+        <label class="fl" for="pe-city">City</label>
+        <input type="text" class="fi" id="pe-city" maxlength="60">
+      </div>
+      <div class="pp-edit-actions">
+        <button class="pp-edit-cancel"
+                onclick="closeProfileEdit()">Cancel</button>
+        <button class="dash-save-btn" id="pe-save-btn"
+                onclick="saveProfileEdit()">Save</button>
+      </div>
+    </div>
+  </div>
+  <div class="pp-section" style="border-top:1px solid var(--border-light)">
+    <div class="pp-section-title">My store</div>
+    <div id="pp-store-wrap"></div>
+  </div>
+</div>
+
+<div id="buyer-overlay"
+     onclick="if(event.target===this)closeBuyerFlow()"
+     style="display:none;position:fixed;inset:0;
+            z-index:600;
+            background:rgba(26,15,10,0.55);
+            backdrop-filter:blur(4px);
+            align-items:flex-end;
+            justify-content:center;">
+
+  <!-- SHEET 1: Name + Phone (first time only) -->
+  <div id="buyer-sheet-1"
+       style="display:none;background:var(--paper-warm);
+              border-radius:24px 24px 0 0;
+              padding:1.8rem 1.5rem 2.5rem;
+              width:100%;max-width:520px;
+              animation:slideUp 0.3s ease;">
+    <div style="width:36px;height:4px;background:var(--border);
+                border-radius:2px;margin:0 auto 1.4rem;"></div>
+    <div style="font-family:'Cormorant Garamond',serif;
+                font-size:1.4rem;font-weight:700;
+                color:var(--ink);margin-bottom:0.3rem;">
+      Quick intro 👋
+    </div>
+    <div style="font-size:0.82rem;color:var(--ink-light);
+                margin-bottom:1.4rem;line-height:1.5;">
+      Just once — we'll remember you for next time.
+    </div>
+    <div style="margin-bottom:1rem;">
+      <label style="font-size:0.76rem;font-weight:600;
+                    color:var(--ink-mid);display:block;
+                    margin-bottom:0.4rem;">
+        Your full name
+      </label>
+      <input id="byr-name" type="text"
+             placeholder="e.g. Priya Sharma"
+             autocomplete="name"
+             style="width:100%;padding:0.8rem 1rem;
+                    border:1.5px solid var(--border);
+                    border-radius:var(--radius-sm);
+                    font-family:'Plus Jakarta Sans',sans-serif;
+                    font-size:0.95rem;background:white;
+                    color:var(--ink);outline:none;
+                    transition:border-color 0.2s;">
+    </div>
+    <div style="margin-bottom:1.4rem;">
+      <label style="font-size:0.76rem;font-weight:600;
+                    color:var(--ink-mid);display:block;
+                    margin-bottom:0.4rem;">
+        WhatsApp number
+      </label>
+      <input id="byr-phone" type="tel"
+             placeholder="98765 43210"
+             autocomplete="tel"
+             style="width:100%;padding:0.8rem 1rem;
+                    border:1.5px solid var(--border);
+                    border-radius:var(--radius-sm);
+                    font-family:'Plus Jakarta Sans',sans-serif;
+                    font-size:0.95rem;background:white;
+                    color:var(--ink);outline:none;
+                    transition:border-color 0.2s;">
+    </div>
+    <button onclick="buyerSheet1Next()"
+            style="width:100%;background:var(--ink);
+                   color:white;border:none;
+                   padding:0.95rem;
+                   border-radius:var(--radius-sm);
+                   font-family:'Plus Jakarta Sans',sans-serif;
+                   font-size:0.95rem;font-weight:700;
+                   cursor:pointer;transition:all 0.2s;">
+      Continue →
+    </button>
+    <div style="text-align:center;margin-top:0.9rem;
+                font-size:0.74rem;color:var(--ink-faint);">
+      Your details stay on your phone only.
+    </div>
+  </div>
+
+  <!-- SHEET 2: Address + Note + Confirm -->
+  <div id="buyer-sheet-2"
+       style="display:none;background:var(--paper-warm);
+              border-radius:24px 24px 0 0;
+              padding:1.8rem 1.5rem 2.5rem;
+              width:100%;max-width:520px;
+              animation:slideUp 0.3s ease;">
+    <div style="width:36px;height:4px;background:var(--border);
+                border-radius:2px;margin:0 auto 1.4rem;"></div>
+
+    <!-- Product summary -->
+    <div id="byr-product-card"
+         style="background:white;border:1px solid var(--border-light);
+                border-radius:var(--radius-sm);
+                padding:0.9rem 1rem;
+                margin-bottom:1.2rem;
+                display:flex;align-items:center;gap:0.9rem;">
+      <div id="byr-product-img"
+           style="width:52px;height:52px;border-radius:8px;
+                  background:var(--paper-deep);
+                  display:flex;align-items:center;
+                  justify-content:center;font-size:1.6rem;
+                  flex-shrink:0;overflow:hidden;"></div>
+      <div>
+        <div id="byr-product-name"
+             style="font-weight:700;font-size:0.9rem;
+                    color:var(--ink);margin-bottom:0.2rem;"></div>
+        <div id="byr-product-price"
+             style="font-family:'Cormorant Garamond',serif;
+                    font-size:1.1rem;font-weight:700;
+                    color:var(--earth);"></div>
+      </div>
+    </div>
+
+    <!-- Buyer name display (read-only) -->
+    <div id="byr-greeting"
+         style="font-size:0.82rem;color:var(--ink-light);
+                margin-bottom:1rem;"></div>
+
+    <!-- Address -->
+    <div style="margin-bottom:1rem;">
+      <label style="font-size:0.76rem;font-weight:600;
+                    color:var(--ink-mid);display:block;
+                    margin-bottom:0.4rem;">
+        Delivery address
+      </label>
+      <textarea id="byr-address"
+                placeholder="Flat / Building, Area, City — Pincode"
+                rows="2"
+                style="width:100%;padding:0.8rem 1rem;
+                       border:1.5px solid var(--border);
+                       border-radius:var(--radius-sm);
+                       font-family:'Plus Jakarta Sans',sans-serif;
+                       font-size:0.88rem;background:white;
+                       color:var(--ink);outline:none;resize:none;
+                       transition:border-color 0.2s;
+                       line-height:1.5;"></textarea>
+    </div>
+
+    <!-- Optional note -->
+    <div style="margin-bottom:1.4rem;">
+      <label style="font-size:0.76rem;font-weight:600;
+                    color:var(--ink-mid);display:block;
+                    margin-bottom:0.4rem;">
+        Note for seller
+        <span style="font-weight:400;color:var(--ink-faint);">
+          (optional)
+        </span>
+      </label>
+      <input id="byr-note" type="text"
+             placeholder="e.g. Less spicy, gift wrap, etc."
+             style="width:100%;padding:0.8rem 1rem;
+                    border:1.5px solid var(--border);
+                    border-radius:var(--radius-sm);
+                    font-family:'Plus Jakarta Sans',sans-serif;
+                    font-size:0.88rem;background:white;
+                    color:var(--ink);outline:none;
+                    transition:border-color 0.2s;">
+    </div>
+
+    <!-- Send button -->
+    <button onclick="buyerSendOrder()"
+            id="byr-send-btn"
+            style="width:100%;background:#25D366;
+                   color:white;border:none;padding:0.95rem;
+                   border-radius:var(--radius-sm);
+                   font-family:'Plus Jakarta Sans',sans-serif;
+                   font-size:0.95rem;font-weight:700;
+                   cursor:pointer;transition:all 0.2s;
+                   display:flex;align-items:center;
+                   justify-content:center;gap:0.5rem;">
+      💬 Send order on WhatsApp
+    </button>
+
+    <div style="text-align:center;margin-top:0.8rem;">
+      <span onclick="buyerEditDetails()"
+            style="font-size:0.74rem;color:var(--ink-faint);
+                   cursor:pointer;text-decoration:underline;">
+        Wrong name or number? Edit
+      </span>
+    </div>
+  </div>
+
+</div>
+
+<div id="dash-panel-overlay"
+     onclick="if(event.target===this)closeDashPanel()"
+     style="display:none;position:fixed;inset:0;
+            z-index:700;
+            background:rgba(26,15,10,0.55);
+            backdrop-filter:blur(4px);
+            align-items:flex-end;
+            justify-content:center;">
+  <div style="background:var(--paper-warm);
+              border-radius:24px 24px 0 0;
+              padding:1.5rem 1.5rem 2.5rem;
+              width:100%;max-width:600px;
+              max-height:85vh;overflow-y:auto;
+              animation:slideUp 0.3s ease;">
+    <div style="width:36px;height:4px;
+                background:var(--border);
+                border-radius:2px;
+                margin:0 auto 1.2rem;"></div>
+    <div style="display:flex;align-items:center;
+                justify-content:space-between;
+                margin-bottom:1.2rem;">
+      <div style="font-family:'Cormorant Garamond',
+                  serif;font-size:1.3rem;
+                  font-weight:700;color:var(--ink);">
+        Store Analytics
+      </div>
+      <button onclick="closeDashPanel()"
+              style="background:none;border:none;
+                     font-size:1.2rem;cursor:pointer;
+                     color:var(--ink-light);">✕</button>
+    </div>
+
+    <!-- Dashboard tabs -->
+    <div class="dash-tabs">
+      <button class="dash-tab on"
+              onclick="switchDashTab('pending',this)">
+        Pending
+        <span class="dash-badge"
+              id="dash-pending-count">0</span>
+      </button>
+      <button class="dash-tab"
+              onclick="switchDashTab('accepted',this)">
+        Accepted
+      </button>
+      <button class="dash-tab"
+              onclick="switchDashTab('analytics',this)">
+        Analytics
+      </button>
+      <button class="dash-tab"
+              onclick="switchDashTab('info',this)">
+        Store Info
+      </button>
+    </div>
+
+    <div id="dash-pending" class="dash-panel">
+      <div id="dash-pending-list"
+           class="dash-order-list"></div>
+    </div>
+    <div id="dash-accepted" class="dash-panel"
+         style="display:none">
+      <div id="dash-accepted-list"
+           class="dash-order-list"></div>
+    </div>
+    <div id="dash-analytics" class="dash-panel"
+         style="display:none">
+      <div class="dash-stats-grid">
+        <div class="dash-stat">
+          <div class="dash-stat-num"
+               id="an-total-orders">0</div>
+          <div class="dash-stat-label">
+            Total Orders
+          </div>
+        </div>
+        <div class="dash-stat">
+          <div class="dash-stat-num"
+               id="an-revenue">₹0</div>
+          <div class="dash-stat-label">
+            Est. Revenue
+          </div>
+        </div>
+        <div class="dash-stat">
+          <div class="dash-stat-num"
+               id="an-this-week">0</div>
+          <div class="dash-stat-label">
+            This Week
+          </div>
+        </div>
+        <div class="dash-stat">
+          <div class="dash-stat-num"
+               id="an-top-product">—</div>
+          <div class="dash-stat-label">
+            Top Product
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="dash-info" class="dash-panel"
+         style="display:none">
+      <div class="fg">
+        <label class="fl" for="di-whatsapp">WhatsApp Number</label>
+        <input type="tel" class="fi" id="di-whatsapp"
+               maxlength="20"
+               placeholder="e.g. 98765 43210">
+      </div>
+      <div class="dash-info-hint">
+        Shown on your product pages under
+        "Seller Info". Leave a field empty to hide it.
+      </div>
+      <div class="fg">
+        <label class="fl" for="di-delivery-areas">Ships to</label>
+        <input type="text" class="fi" id="di-delivery-areas"
+               maxlength="120"
+               placeholder="e.g. Mumbai, Thane, Navi Mumbai">
+      </div>
+      <div class="fg">
+        <label class="fl" for="di-delivery-time">Delivery time</label>
+        <input type="text" class="fi" id="di-delivery-time"
+               maxlength="80"
+               placeholder="e.g. 2–4 days">
+      </div>
+      <div class="fg">
+        <label class="fl" for="di-return-policy">Returns</label>
+        <textarea class="ft" id="di-return-policy"
+                  maxlength="300"
+                  placeholder="e.g. Exchange within 3 days if damaged on arrival"></textarea>
+      </div>
+      <div class="fg">
+        <label class="fl" for="di-payment-methods">Payment</label>
+        <input type="text" class="fi" id="di-payment-methods"
+               maxlength="120"
+               placeholder="e.g. UPI, Cash on delivery">
+      </div>
+      <button class="dash-save-btn" id="di-save-btn"
+              onclick="saveSellerInfo()">
+        Save
+      </button>
+    </div>
+
+  </div>
+</div>
+

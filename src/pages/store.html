@@ -1,0 +1,118 @@
+<div class="pg" id="pg-store">
+  <!-- Cover: full-bleed, tall, immersive -->
+  <div class="sv-cover" id="sv-cover">
+    <div class="sv-cover-pattern" id="sv-cover-pattern"></div>
+    <!-- Cover wall layer — bubbles or photos -->
+    <div id="sv-cover-wall"
+         style="position:absolute;inset:0;
+                z-index:1;overflow:hidden;">
+    </div>
+    <div class="sv-cover-fade"
+         style="z-index:2;position:absolute;
+                bottom:0;left:0;right:0;
+                height:120px;
+                background:linear-gradient(
+                  to bottom,transparent,
+                  rgba(26,15,10,0.5));"></div>
+    <button class="sv-back-float"
+            style="z-index:10;"
+            onclick="storeBack();window.scrollTo(0,0);">
+      ← Back
+    </button>
+    <!-- Owner: edit cover button -->
+    <button class="cover-edit-btn"
+            id="cover-edit-btn"
+            onclick="openCoverEditor()">
+      🖼 Edit cover
+    </button>
+  </div>
+
+  <!-- Avatar and action buttons row -->
+  <div class="sv-avatar-wrap">
+    <div style="display:flex;align-items:flex-end;gap:0.9rem;">
+      <div class="sv-avatar-wrap-inner">
+        <div class="sv-avatar" id="sv-av"></div>
+        <button class="sv-avatar-upload-btn"
+                id="sv-avatar-upload-btn"
+                style="display:none"
+                onclick="triggerAvatarUpload()"
+                title="Change logo">+</button>
+        <input type="file"
+               id="sv-avatar-file-input"
+               accept="image/*"
+               onchange="handleAvatarUpload(event)">
+      </div>
+      <div class="sv-avatar-name-block">
+        <div class="sv-name" id="sv-name"></div>
+        <div class="sv-location" id="sv-location"></div>
+      </div>
+    </div>
+    <div class="sv-action-row">
+      <button class="sv-btn sv-btn-outline" id="sv-dash-btn" style="display:none" onclick="openDashPanel()">📊 Dashboard</button>
+      <button class="sv-btn sv-btn-wa" onclick="whatsappStore()">💬 WhatsApp</button>
+      <button class="sv-btn sv-btn-share" onclick="shareStore()">🔗 Share link</button>
+      <button class="sv-btn sv-btn-insta" id="sv-story-card-btn" style="display:none" onclick="openShareCard()">📸 Story card</button>
+      <button class="sv-btn sv-btn-outline" onclick="showQR()">⬛ QR</button>
+    </div>
+  </div>
+
+  <div class="sv-body">
+    <div class="sv-meta">
+      <div class="sv-tagline" id="sv-tagline"></div>
+      <div class="sv-badges" id="sv-badges"></div>
+    </div>
+
+    <!-- Seller story -->
+    <div class="sv-story" id="sv-story" style="display:none">
+      <div class="sv-story-icon">🌿</div>
+      <div style="flex:1">
+        <div class="sv-story-title" style="display:flex;align-items:center;gap:0.5rem;">
+          Our story
+          <button id="sv-story-edit-btn"
+                  onclick="toggleStoryEdit()"
+                  style="display:none;background:none;border:1px solid var(--border);
+                         border-radius:100px;padding:0.15rem 0.55rem;
+                         font-size:0.7rem;font-weight:600;color:var(--ink);
+                         cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;">
+            ✏️ Edit
+          </button>
+        </div>
+        <div class="sv-story-text" id="sv-story-text"></div>
+        <textarea id="sv-story-input"
+                  rows="4"
+                  placeholder="Tell your story…"
+                  style="display:none;width:100%;margin-top:0.5rem;
+                         border:1px solid var(--border);border-radius:var(--radius);
+                         padding:0.6rem;font-family:'Plus Jakarta Sans',sans-serif;
+                         font-size:0.88rem;color:var(--ink);resize:vertical;
+                         box-sizing:border-box;"></textarea>
+        <div id="sv-story-actions" style="display:none;gap:0.5rem;margin-top:0.5rem;">
+          <button onclick="saveStory()"
+                  style="background:var(--ink);color:white;border:none;
+                         border-radius:100px;padding:0.35rem 0.9rem;
+                         font-size:0.78rem;font-weight:600;cursor:pointer;
+                         font-family:'Plus Jakarta Sans',sans-serif;">
+            Save
+          </button>
+          <button onclick="cancelStoryEdit()"
+                  style="background:none;border:1px solid var(--border);
+                         border-radius:100px;padding:0.35rem 0.9rem;
+                         font-size:0.78rem;font-weight:600;cursor:pointer;
+                         font-family:'Plus Jakarta Sans',sans-serif;color:var(--ink);">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Products -->
+    <div class="sv-section">
+      <div class="sv-section-hdr">
+        <div class="sv-section-title" id="sv-prod-title">Products</div>
+        <button id="sv-add-prod-btn" style="display:none;background:var(--ink);color:white;border:none;padding:0.4rem 0.9rem;border-radius:100px;font-size:0.76rem;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;" onclick="showAddProductModal()">＋ Add</button>
+      </div>
+      <div class="sv-products-grid" id="sv-prod-grid"></div>
+    </div>
+  </div>
+</div>
+

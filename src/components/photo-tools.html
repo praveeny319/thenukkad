@@ -1,0 +1,19 @@
+<div id="img-viewer">
+  <button class="iv-close" onclick="closeImageViewer()" aria-label="Close">✕</button>
+  <div class="iv-track" id="iv-track"></div>
+  <div class="iv-count" id="iv-count"></div>
+</div>
+
+<div id="crop-overlay">
+  <div class="crop-box">
+    <div class="crop-title">Adjust photo</div>
+    <div class="crop-frame" id="crop-frame"><img id="crop-img" alt=""></div>
+    <div class="crop-hint">Drag to reposition · pinch or slide to zoom</div>
+    <input type="range" id="crop-zoom" min="1" max="4" step="0.01" value="1" aria-label="Zoom">
+    <div class="crop-actions">
+      <button class="crop-cancel" onclick="cropCancel()">Cancel</button>
+      <button class="crop-done" id="crop-done-btn" onclick="cropDone()">Use Photo</button>
+    </div>
+  </div>
+</div>
+

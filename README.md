@@ -21,6 +21,17 @@ the link provided by the store owner.
 - Hosting: GitHub Pages
 - Domain: thenukkad.store
 
+## Project structure
+
+- `index.html` is the site entry point.
+- `src/pages/` contains the individual page sections.
+- `src/components/` contains shared navigation, overlays, and UI components.
+- `src/styles/style.css` contains the site styles.
+- `src/load-fragments.js` loads the HTML fragments; `src/app.js` contains the app logic.
+
+The page fragments are loaded with `fetch`, so run the site through a local web
+server rather than opening `index.html` directly from the filesystem.
+
 ## Features
 
 - Store profile with animated cover wall

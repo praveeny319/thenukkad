@@ -1,0 +1,136 @@
+<button id="chat-fab" onclick="openEnqSheet()">✉️ Ask seller</button>
+
+<div id="chat-panel">
+  <div class="chat-hdr">
+    <div class="chat-hdr-left">
+      <div class="chat-hdr-av" id="chat-hdr-av">🌿</div>
+      <div>
+        <div class="chat-hdr-name" id="chat-hdr-name">Store Assistant</div>
+        <div class="chat-hdr-sub">Ask me anything about our products</div>
+      </div>
+    </div>
+    <button class="chat-close-btn" onclick="closeChatWidget()">✕</button>
+  </div>
+  <div class="chat-msgs" id="chat-msgs"></div>
+  <div class="chat-input-row">
+    <input type="text" id="chat-input" placeholder="Describe your need or concern..."
+      onkeydown="if(event.key==='Enter'){event.preventDefault();sendChatMsg();}">
+    <button id="chat-send-btn" onclick="sendChatMsg()">→</button>
+  </div>
+  <div class="chat-powered">Powered by AI · Nukkad</div>
+</div>
+
+<div id="enq-overlay"
+     onclick="if(event.target===this)closeEnqSheet()"
+     style="display:none;position:fixed;inset:0;
+            z-index:650;
+            background:rgba(26,15,10,0.55);
+            backdrop-filter:blur(4px);
+            align-items:flex-end;
+            justify-content:center;">
+  <div style="background:var(--paper-warm);
+              border-radius:24px 24px 0 0;
+              padding:1.5rem 1.5rem 2.5rem;
+              width:100%;max-width:520px;
+              animation:slideUp 0.3s ease;">
+    <div style="width:36px;height:4px;
+                background:var(--border);
+                border-radius:2px;
+                margin:0 auto 1.2rem;"></div>
+    <div style="display:flex;align-items:center;
+                justify-content:space-between;
+                margin-bottom:0.3rem;">
+      <div style="font-family:'Cormorant Garamond',
+                  serif;font-size:1.3rem;
+                  font-weight:700;color:var(--ink);">
+        Ask the seller
+      </div>
+      <button onclick="closeEnqSheet()"
+              style="background:none;border:none;
+                     font-size:1.2rem;cursor:pointer;
+                     color:var(--ink-light);">✕</button>
+    </div>
+    <div style="font-size:0.8rem;color:var(--ink-light);
+                margin-bottom:1.2rem;">
+      Your message goes directly to the seller
+      on WhatsApp.
+    </div>
+
+    <div id="enq-sheet-form">
+      <div class="fg">
+        <label class="fl">Your Name</label>
+        <input type="text" class="fi" id="eq-name"
+               placeholder="Your name"
+               autocomplete="name">
+      </div>
+      <div class="fg">
+        <label class="fl">WhatsApp Number</label>
+        <input type="tel" class="fi" id="eq-phone"
+               placeholder="98765 43210"
+               autocomplete="tel">
+      </div>
+      <div class="fg">
+        <label class="fl">What are you asking about?</label>
+        <input type="text" class="fi" id="eq-prod"
+               placeholder="e.g. Hair Growth Oil">
+      </div>
+      <div class="fg">
+        <label class="fl">Your message</label>
+        <textarea class="ft" id="eq-note"
+                  placeholder="Tell the seller
+                  what you'd like to know..."
+                  rows="3"></textarea>
+      </div>
+      <button class="enq-submit"
+              onclick="submitEnq()">
+        💬 Send on WhatsApp
+      </button>
+    </div>
+
+    <div class="enq-success" id="enq-success"
+         style="display:none">
+      <div class="enq-success-icon">🎉</div>
+      <div class="enq-success-title serif">Sent!</div>
+      <div class="enq-success-sub">
+        WhatsApp is open with your message.
+        The seller will reply shortly.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<button id="cart-fab" onclick="openCart()">
+  🛒 Cart
+  <span id="cart-count">0</span>
+  <span id="cart-total-fab"></span>
+</button>
+
+<div id="cart-overlay"
+     onclick="if(event.target===this)closeCart()">
+  <div class="cart-panel">
+    <div class="cart-header">
+      <div class="cart-title">Your Cart 🛒</div>
+      <button class="cart-close"
+              onclick="closeCart()">✕</button>
+    </div>
+    <div class="cart-store-name"
+         id="cart-store-name"></div>
+    <div class="cart-items" id="cart-items"></div>
+    <div class="cart-divider"></div>
+    <div class="cart-total-row">
+      <div class="cart-total-label">Total</div>
+      <div class="cart-total-amount"
+           id="cart-total">₹0</div>
+    </div>
+    <button class="cart-checkout-btn"
+            onclick="cartCheckout()">
+      💬 Send order on WhatsApp
+    </button>
+    <button class="cart-clear-btn"
+            onclick="clearCart()">
+      Clear cart
+    </button>
+  </div>
+</div>
+

@@ -1,0 +1,45 @@
+<div class="pg" id="pg-market">
+  <div class="market-hero">
+    <div class="mh-pattern"></div>
+    <div class="mh-floaters">
+      <div class="mh-float-card"><span class="fc-emoji">🌿</span><div><div class="fc-text">Priya's Skincare</div><div class="fc-sub">Hair & Skincare · Andheri</div></div></div>
+      <div class="mh-float-card"><span class="fc-emoji">🧁</span><div><div class="fc-text">Meena's Bakery</div><div class="fc-sub">Cakes & Bakes · Bandra</div></div></div>
+      <div class="mh-float-card"><span class="fc-emoji">🍱</span><div><div class="fc-text">Sunita Tiffin</div><div class="fc-sub">Home Food · Borivali</div></div></div>
+      <div class="mh-float-card"><span class="fc-emoji">🕯️</span><div><div class="fc-text">Craft by Ritu</div><div class="fc-sub">Home Decor · Thane</div></div></div>
+      <div class="mh-float-card"><span class="fc-emoji">💍</span><div><div class="fc-text">Zara Jewels</div><div class="fc-sub">Handmade Jewellery · Dadar</div></div></div>
+      <div class="mh-float-card"><span class="fc-emoji">🥨</span><div><div class="fc-text">Asha's Farshan</div><div class="fc-sub">Snacks & Namkeen · Mulund</div></div></div>
+    </div>
+    <div class="mh-inner">
+      <h1 class="mh-title serif">Find sellers in your <em>neighbourhood</em></h1>
+      <p class="mh-sub">Home bakers, cooks, artisans — real sellers near you, on WhatsApp. 🌿</p>
+      <div class="search-wrap">
+        <input type="text" id="search-inp" placeholder='Try "farshan Mumbai" or "birthday cake Andheri"...' oninput="doSearch()">
+        <button class="search-btn" onclick="doSearch()">Search</button>
+      </div>
+    </div>
+  </div>
+  <div class="market-body">
+    <div class="filter-row">
+      <div class="fchip on" onclick="doFilter('all',this)">All</div>
+      <div class="fchip" onclick="doFilter('hair',this)">💆 Hair & Skin</div>
+      <div class="fchip" onclick="doFilter('food',this)">🍳 Food</div>
+      <div class="fchip" onclick="doFilter('baked',this)">🧁 Baked Goods</div>
+      <div class="fchip" onclick="doFilter('clothing',this)">👗 Clothing</div>
+      <div class="fchip" onclick="doFilter('decor',this)">🕯️ Decor</div>
+      <div class="fchip" onclick="doFilter('jewellery',this)">💍 Jewellery</div>
+      <div class="fchip" onclick="doFilter('herbal',this)">🌿 Herbal</div>
+    </div>
+    <div class="market-section-hdr">
+      <div class="msh-title serif">Stores near you</div>
+      <div class="msh-count" id="mkt-count"></div>
+    </div>
+    <div class="stores-grid" id="stores-grid">
+      <div class="loading-grid">
+        <div class="skeleton"><div class="sk-cover"></div><div class="sk-body"><div class="sk-line" style="height:14px;width:60%"></div><div class="sk-line" style="height:10px;width:80%"></div><div class="sk-line" style="height:10px;width:40%"></div></div></div>
+        <div class="skeleton"><div class="sk-cover"></div><div class="sk-body"><div class="sk-line" style="height:14px;width:60%"></div><div class="sk-line" style="height:10px;width:80%"></div><div class="sk-line" style="height:10px;width:40%"></div></div></div>
+        <div class="skeleton"><div class="sk-cover"></div><div class="sk-body"><div class="sk-line" style="height:14px;width:60%"></div><div class="sk-line" style="height:10px;width:80%"></div><div class="sk-line" style="height:10px;width:40%"></div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+

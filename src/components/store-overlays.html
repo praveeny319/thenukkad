@@ -1,0 +1,476 @@
+<div id="share-card-modal"
+     onclick="if(event.target===this)closeShareCard()"
+     style="display:none;position:fixed;inset:0;
+            z-index:800;
+            background:rgba(26,15,10,0.8);
+            backdrop-filter:blur(8px);
+            align-items:center;justify-content:center;
+            padding:1rem;">
+
+  <div style="background:var(--paper-warm);
+              border-radius:var(--radius-lg);
+              padding:1.4rem;
+              max-width:380px;width:100%;
+              max-height:92vh;overflow-y:auto;
+              box-shadow:0 32px 80px rgba(0,0,0,0.4);">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;
+                justify-content:space-between;
+                margin-bottom:1rem;">
+      <div>
+        <div style="font-family:'Cormorant Garamond',
+                    serif;font-size:1.2rem;
+                    font-weight:700;color:var(--ink);">
+          Story Card
+        </div>
+        <div style="font-size:0.74rem;
+                    color:var(--ink-light);
+                    margin-top:0.1rem;">
+          Download and share on Instagram or WhatsApp
+        </div>
+      </div>
+      <button onclick="closeShareCard()"
+              style="background:none;border:none;
+                     font-size:1.2rem;cursor:pointer;
+                     color:var(--ink-light);">✕</button>
+    </div>
+
+    <!-- Card type tabs -->
+    <div style="display:flex;gap:0.4rem;
+                margin-bottom:1.2rem;">
+      <button id="sct-store-btn"
+              onclick="switchStoryCardType('store')"
+              style="flex:1;padding:0.5rem;
+                     border-radius:8px;
+                     font-family:'Plus Jakarta Sans',
+                     sans-serif;font-size:0.78rem;
+                     font-weight:600;cursor:pointer;
+                     border:1.5px solid var(--ink);
+                     background:var(--ink);color:white;
+                     transition:all 0.2s;">
+        🏪 Store Card
+      </button>
+      <button id="sct-product-btn"
+              onclick="switchStoryCardType('product')"
+              style="flex:1;padding:0.5rem;
+                     border-radius:8px;
+                     font-family:'Plus Jakarta Sans',
+                     sans-serif;font-size:0.78rem;
+                     font-weight:600;cursor:pointer;
+                     border:1.5px solid var(--border);
+                     background:white;
+                     color:var(--ink-mid);
+                     transition:all 0.2s;">
+        🛍️ Product Card
+      </button>
+    </div>
+
+    <!-- Product selector (shown for product card) -->
+    <div id="sct-product-selector"
+         style="display:none;margin-bottom:1rem;">
+      <label style="font-size:0.74rem;font-weight:600;
+                    color:var(--ink-mid);display:block;
+                    margin-bottom:0.4rem;">
+        Select product
+      </label>
+      <select id="sct-product-select"
+              onchange="updateProductStoryCard()"
+              style="width:100%;padding:0.6rem 0.8rem;
+                     border:1.5px solid var(--border);
+                     border-radius:8px;
+                     font-family:'Plus Jakarta Sans',
+                     sans-serif;font-size:0.84rem;
+                     color:var(--ink);background:white;
+                     outline:none;">
+      </select>
+    </div>
+
+    <!-- Card preview canvas area -->
+    <div style="border-radius:12px;overflow:hidden;
+                margin-bottom:1rem;
+                box-shadow:0 8px 24px rgba(0,0,0,0.15);
+                background:#111;
+                aspect-ratio:9/16;
+                position:relative;">
+      <canvas id="story-card-canvas"
+              style="width:100%;height:100%;
+                     display:block;"></canvas>
+      <div id="story-card-loading"
+           style="position:absolute;inset:0;
+                  display:flex;align-items:center;
+                  justify-content:center;
+                  background:rgba(0,0,0,0.4);
+                  color:white;font-size:0.84rem;
+                  font-family:'Plus Jakarta Sans',
+                  sans-serif;">
+        Generating...
+      </div>
+    </div>
+
+    <!-- Hidden QR div for generation -->
+    <div id="qr-gen-div"
+         style="display:none;position:absolute;
+                left:-9999px;top:-9999px;">
+    </div>
+
+    <!-- Action buttons -->
+    <div style="display:flex;gap:0.6rem;">
+      <button onclick="downloadStoryCard()"
+              style="flex:1;background:var(--ink);
+                     color:white;border:none;
+                     padding:0.85rem;
+                     border-radius:var(--radius-sm);
+                     font-family:'Plus Jakarta Sans',
+                     sans-serif;font-size:0.86rem;
+                     font-weight:700;cursor:pointer;
+                     transition:all 0.2s;
+                     display:flex;align-items:center;
+                     justify-content:center;gap:0.4rem;">
+        ⬇️ Download
+      </button>
+      <button onclick="copyStoreLink()"
+              style="background:white;
+                     color:var(--ink-mid);
+                     border:1.5px solid var(--border);
+                     padding:0.85rem 1rem;
+                     border-radius:var(--radius-sm);
+                     font-family:'Plus Jakarta Sans',
+                     sans-serif;font-size:0.86rem;
+                     font-weight:600;cursor:pointer;
+                     transition:all 0.2s;
+                     white-space:nowrap;">
+        🔗 Copy link
+      </button>
+    </div>
+
+    <div style="text-align:center;margin-top:0.8rem;
+                font-size:0.72rem;color:var(--ink-faint);
+                line-height:1.5;">
+      QR code links directly to your store.<br>
+      Viewers scan it to visit instantly.
+    </div>
+
+  </div>
+</div>
+
+<div id="product-detail">
+  <div class="pd-wrap">
+
+    <!-- Top bar -->
+    <div class="pd-topbar">
+      <button class="pd-back"
+              onclick="closeProductDetail()">
+        ← Back to Store
+      </button>
+      <div class="pd-store-pill"
+           id="pd-store-pill"
+           onclick="closeProductDetail()">
+        <div class="pd-store-pill-av"
+             id="pd-store-pill-av">🌿</div>
+        <span id="pd-store-pill-name">Store</span>
+        <span style="color:var(--ink-light);">›</span>
+      </div>
+    </div>
+
+    <!-- Photo carousel (square, swipe) -->
+    <div class="pd-hero" id="pd-hero">
+      <div class="pd-track" id="pd-track"></div>
+      <div class="pd-dots" id="pd-dots"></div>
+    </div>
+
+    <!-- Info -->
+    <div class="pd-info">
+      <div class="pd-category-tag"
+           id="pd-category-tag">⭐ Other</div>
+      <div class="pd-name-price-row">
+        <div class="pd-name serif"
+             id="pd-name"></div>
+        <div class="pd-price" id="pd-price"></div>
+      </div>
+      <div style="font-size:0.84rem;
+                  color:var(--ink-light);
+                  font-family:'Plus Jakarta Sans',
+                  sans-serif;margin-bottom:0.5rem;"
+           id="pd-sub-desc"></div>
+    </div>
+
+    <!-- Seller card -->
+    <div class="pd-seller-card">
+      <div class="pd-seller-av"
+           id="pd-seller-av">🌿</div>
+      <div class="pd-seller-info">
+        <div class="pd-seller-name">
+          <span id="pd-seller-name"></span>
+        </div>
+        <div class="pd-seller-loc"
+             id="pd-seller-loc"></div>
+      </div>
+    </div>
+
+    <!-- Description + specs -->
+    <div class="pd-desc-section"
+         id="pd-desc-section">
+      <div class="pd-section-title">
+        About this product
+      </div>
+      <div class="pd-desc-specs-row">
+        <div class="pd-desc" id="pd-desc"></div>
+        <div class="pd-specs" id="pd-specs"></div>
+      </div>
+    </div>
+
+    <!-- Spacer for fixed CTAs -->
+    <div style="height:20px;"></div>
+
+    <!-- Seller info (filled from store fields) -->
+    <div class="sv-seller-info" id="pd-seller-terms"
+         style="display:none;">
+      <h4 class="sv-seller-info-title">Seller Info</h4>
+      <div id="pd-seller-terms-rows"></div>
+    </div>
+
+    <!-- Disclaimer -->
+    <p class="sv-seller-disclaimer">Orders are fulfilled directly by the seller. Delivery, returns &amp; payment terms are as per seller's policy.</p>
+
+    <!-- Spacer -->
+    <div style="height:40px;"></div>
+
+  </div>
+
+  <!-- Fixed bottom CTAs -->
+  <div class="pd-order-section">
+    <button class="pd-enquire-btn"
+            id="pd-enquire-btn">
+      💬 Ask a Question
+    </button>
+    <button class="pd-wa-btn" id="pd-wa-btn">
+      <svg width="18" height="18"
+           viewBox="0 0 24 24"
+           fill="currentColor">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+      </svg>
+      Order on WhatsApp
+    </button>
+  </div>
+</div>
+
+<div id="add-prod-modal">
+  <div class="apm-box">
+    <div class="apm-title serif">
+      Add Product
+      <button class="apm-close" onclick="closeAddProductModal()">✕</button>
+    </div>
+
+    <!-- Photo upload -->
+    <div class="cf">
+      <div class="img-upload-area" id="apm-iua">
+        <div id="apm-ipl">
+          <div style="font-size:1.5rem;margin-bottom:0.3rem">📷</div>
+          <div class="img-upload-label">Click to take or upload product photo</div>
+          <button type="button" class="img-upload-btn" onclick="document.getElementById('apm-img').click()">📷 Choose Photo</button>
+        </div>
+        <div id="apm-ipw" style="display:none">
+          <img id="apm-ipv" class="img-upload-preview" alt="preview">
+          <button type="button" class="img-change-btn" onclick="document.getElementById('apm-img').click()">Change Photo</button>
+        </div>
+        <input type="file" class="img-upload-input" id="apm-img" accept="image/*" onchange="handleApmImg(event)">
+      </div>
+    </div>
+
+    <!-- Manual fields -->
+    <div class="cf">
+      <label class="cl">Product Name <span>*</span></label>
+      <input type="text" class="ci" id="apm-name" placeholder="e.g. Chocochip Cookie">
+    </div>
+    <div class="cf">
+      <label class="cl">Price ₹ <span>*</span></label>
+      <input type="number" class="ci" id="apm-price" placeholder="e.g. 259">
+    </div>
+    <div class="cf">
+      <label class="cl">Description</label>
+      <textarea class="ct" id="apm-desc" placeholder="Describe your product..." rows="3"></textarea>
+    </div>
+    <button class="apm-save" id="apm-save-btn" onclick="saveNewProduct()">Save Product</button>
+  </div>
+</div>
+
+<div id="qr-modal">
+  <div class="qr-box">
+    <div class="qr-title serif">Your Store QR Code</div>
+    <div class="qr-sub" id="qr-url-label"></div>
+    <div id="qr-canvas"></div>
+    <div class="qr-btns">
+      <button class="qr-dl" onclick="downloadQR()">⬇ Download</button>
+      <button class="qr-close" onclick="closeQR()">Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="edit-prod-modal" onclick="if(event.target===this)closeEditProduct()">
+  <div class="epm-box">
+    <div class="epm-title">Edit product</div>
+    <input type="hidden" id="epm-prod-id">
+    <input type="hidden" id="epm-handle">
+    <input class="ct" id="epm-name" placeholder="Product name" type="text">
+    <input class="ct" id="epm-price" placeholder="Price (₹)" type="number" min="0">
+    <textarea class="ct" id="epm-desc" placeholder="Description" rows="3"></textarea>
+    <div style="margin-bottom:1rem;">
+      <label style="font-size:0.78rem;font-weight:600;
+                    color:var(--ink-mid);display:block;
+                    margin-bottom:0.5rem;">
+        Product Photos (up to 2)
+      </label>
+      <!-- Main photo -->
+      <div id="ep-current-img"
+           style="margin-bottom:0.6rem;border-radius:10px;
+                  overflow:hidden;max-height:140px;
+                  background:var(--paper-deep);
+                  display:flex;align-items:center;
+                  justify-content:center;
+                  min-height:60px;"></div>
+      <label for="ep-image-file"
+             style="display:inline-flex;
+                    align-items:center;gap:0.4rem;
+                    background:var(--paper-deep);
+                    border:1.5px dashed var(--border);
+                    color:var(--ink-mid);font-size:0.78rem;
+                    font-weight:600;padding:0.55rem 1rem;
+                    border-radius:100px;cursor:pointer;
+                    font-family:'Plus Jakarta Sans',
+                    sans-serif;transition:all 0.2s;
+                    margin-bottom:0.8rem;">
+        📷 Change main photo
+      </label>
+      <input type="file" id="ep-image-file"
+             accept="image/*" style="display:none"
+             onchange="previewEditImage(event)">
+      <!-- Extra photos grid -->
+      <label style="font-size:0.74rem;font-weight:600;
+                    color:var(--ink-mid);display:block;
+                    margin-bottom:0.4rem;">
+        Extra photos
+        <span style="font-weight:400;
+                     color:var(--ink-faint);">
+          (optional — different angles)
+        </span>
+      </label>
+      <div id="ep-extra-photos"
+           style="display:grid;
+                  grid-template-columns:repeat(4,1fr);
+                  gap:0.4rem;margin-bottom:0.5rem;">
+      </div>
+      <input type="file" id="ep-extra-file"
+             accept="image/*" style="display:none"
+             onchange="handleExtraPhotoUpload(event)">
+    </div>
+    <div class="epm-row">
+      <button class="epm-save" id="epm-save-btn" onclick="saveEditProduct()">Save</button>
+      <button class="epm-cancel" onclick="closeEditProduct()">Close</button>
+    </div>
+    <div style="display:flex;gap:0.5rem;
+                margin-top:0.5rem;">
+      <button id="epm-hide-btn"
+              onclick="toggleHideProduct()"
+              style="flex:1;background:none;
+                     border:1px solid var(--border);
+                     border-radius:100px;
+                     padding:0.55rem;
+                     font-size:0.82rem;
+                     font-weight:600;
+                     cursor:pointer;
+                     font-family:'Plus Jakarta Sans',
+                     sans-serif;
+                     color:var(--ink-mid);
+                     transition:all 0.2s;">
+        👁 Hide product
+      </button>
+      <button onclick="deleteProduct()"
+              style="flex:1;background:none;
+                     border:1px solid #ffaaaa;
+                     border-radius:100px;
+                     padding:0.55rem;
+                     font-size:0.82rem;
+                     font-weight:600;
+                     cursor:pointer;
+                     font-family:'Plus Jakarta Sans',
+                     sans-serif;
+                     color:#cc3333;
+                     transition:all 0.2s;">
+        🗑 Delete
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="cover-editor-overlay"
+     onclick="if(event.target===this)
+              closeCoverEditor()"
+     style="display:none;position:fixed;inset:0;
+            z-index:750;
+            background:rgba(26,15,10,0.6);
+            backdrop-filter:blur(4px);
+            align-items:flex-end;
+            justify-content:center;">
+  <div class="cover-editor">
+    <div style="width:36px;height:4px;
+                background:var(--border);
+                border-radius:2px;
+                margin:0 auto 1.2rem;"></div>
+    <div style="display:flex;align-items:center;
+                justify-content:space-between;
+                margin-bottom:0.4rem;">
+      <div style="font-family:'Cormorant Garamond',
+                  serif;font-size:1.3rem;
+                  font-weight:700;color:var(--ink);">
+        Cover wall
+      </div>
+      <button onclick="closeCoverEditor()"
+              style="background:none;border:none;
+                     font-size:1.2rem;cursor:pointer;
+                     color:var(--ink-light);">✕</button>
+    </div>
+    <div style="font-size:0.78rem;color:var(--ink-light);
+                margin-bottom:1.2rem;line-height:1.5;">
+      Upload up to 8 photos. They'll float across
+      your cover — products, team, brand moments,
+      anything that tells your story.
+    </div>
+
+    <!-- Photo grid — 8 slots -->
+    <div class="cover-photo-grid" id="cover-photo-grid">
+    </div>
+
+    <!-- Hidden file input -->
+    <input type="file" id="cover-file-input"
+           accept="image/*" style="display:none"
+           onchange="handleCoverPhotoUpload(event)">
+
+    <div style="display:flex;gap:0.6rem;
+                margin-top:0.8rem;">
+      <button onclick="saveCoverPhotos()"
+              id="cover-save-btn"
+              style="flex:1;background:var(--ink);
+                     color:white;border:none;
+                     padding:0.85rem;
+                     border-radius:var(--radius-sm);
+                     font-family:'Plus Jakarta Sans',
+                     sans-serif;font-size:0.86rem;
+                     font-weight:700;cursor:pointer;">
+        Save cover
+      </button>
+      <button onclick="resetCoverPhotos()"
+              style="background:white;
+                     border:1.5px solid var(--border);
+                     color:var(--ink-mid);
+                     padding:0.85rem 1rem;
+                     border-radius:var(--radius-sm);
+                     font-family:'Plus Jakarta Sans',
+                     sans-serif;font-size:0.86rem;
+                     font-weight:600;cursor:pointer;">
+        Reset
+      </button>
+    </div>
+  </div>
+</div>
+
