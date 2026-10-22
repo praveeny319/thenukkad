@@ -500,7 +500,7 @@ async function loadStores() {
     console.error('Supabase load error:', e);
     allStores = [...SEEDS];
   }
-  filteredStores = [...allStores];
+  filteredStores = allStores.filter(s => !s.is_disabled || isAdmin());
   renderMarket(filteredStores);
 }
 
@@ -788,13 +788,14 @@ async function openStore(handle) {
     // we fall back to the data already in memory
     const { data: freshStore, error: fetchErr } = await withTimeout(sb
       .from('stores')
-      .select('logo_url, story, cover_photos')
+      .select('logo_url, story, cover_photos, is_disabled')
       .eq('handle', handle)
       .single(), 3000);
     if (fetchErr) {
       console.warn('Store fetch error:', fetchErr.message);
     }
     if (freshStore) {
+      s.is_disabled = !!freshStore.is_disabled;
       if (freshStore.logo_url) s.logo_url = freshStore.logo_url;
       if (freshStore.story) s.story = freshStore.story;
       if (freshStore.cover_photos) s.cover_photos = freshStore.cover_photos;
@@ -802,6 +803,12 @@ async function openStore(handle) {
     }
   } catch(e) {
     console.warn('Could not fetch live store data:', e);
+  }
+
+  // Disabled by admin — block everyone except the admin
+  if (s.is_disabled && !isAdmin()) {
+    showDenied(s);
+    return;
   }
 
   // Cover
@@ -1846,7 +1853,7 @@ function switchAdminTab(tab, el) {
   document.querySelectorAll('.admin-tab')
     .forEach(t => t.classList.remove('on'));
   el.classList.add('on');
-  ['stores','orders','users'].forEach(p => {
+  ['stores','orders','users','chats'].forEach(p => {
     const panel = document.getElementById('adm-panel-' + p);
     if (panel) panel.style.display = p === tab ? 'block' : 'none';
   });
@@ -1931,7 +1938,7 @@ async function loadAdminData(opts = {}) {
         return `<div class="adm-store-row">
           <div class="adm-store-emoji">${esc(s.emoji || '🏪')}</div>
           <div class="adm-store-info">
-            <div class="adm-store-name">${esc(s.brand_name)}</div>
+            <div class="adm-store-name">${esc(s.brand_name)}${s.is_disabled ? ' <span class="adm-off-tag">Disabled</span>' : ''}</div>
             <div class="adm-store-meta">
               <span>@${esc(s.handle)}</span>
               <span>·</span>
@@ -1951,6 +1958,11 @@ async function loadAdminData(opts = {}) {
                     style="background:var(--earth);"
                     onclick="adminEditStore(${jsArg(s.handle)})">
               Edit
+            </button>
+            <button class="adm-view-btn"
+                    style="background:${s.is_disabled ? 'var(--leaf)' : 'var(--rose)'};"
+                    onclick="adminToggleStore(${jsArg(s.handle)}, ${!s.is_disabled})">
+              ${s.is_disabled ? 'Enable' : 'Disable'}
             </button>
           </div>
         </div>`;
@@ -5344,4 +5356,182 @@ function closeNukkadStory() {
   setTimeout(() => {
     overlay.style.display = 'none';
   }, 600);
+}
+
+
+// ═══════════════════════════════════
+// ADMIN: ENABLE / DISABLE STORE
+// ═══════════════════════════════════
+async function adminToggleStore(handle, disable) {
+  if (!isAdmin()) return;
+  const msg = disable
+    ? 'Disable this store? Visitors will see "Access denied by the admin".'
+    : 'Enable this store again?';
+  if (!confirm(msg)) return;
+  const { error } = await sb.from('stores')
+    .update({ is_disabled: disable }).eq('handle', handle);
+  if (error) {
+    console.error('Toggle store error:', error);
+    showToast('Could not update store');
+    return;
+  }
+  const cached = allStores.find(x => x.handle === handle);
+  if (cached) cached.is_disabled = disable;
+  showToast(disable ? 'Store disabled' : 'Store enabled ✓');
+  loadAdminData();
+}
+
+// ═══════════════════════════════════
+// ACCESS DENIED POPUP
+// ═══════════════════════════════════
+let _deniedHandle = null;
+
+function showDenied(store) {
+  _deniedHandle = store.handle;
+  const isOwner = currentAuthUser && store.owner_email &&
+    currentAuthUser.email === store.owner_email;
+  const chatBtn = document.getElementById('denied-chat-btn');
+  document.getElementById('denied-sub').textContent = isOwner
+    ? 'Your store has been disabled. Chat with the admin to find out why or to get it resolved.'
+    : 'This store is currently unavailable. If this is your store, log in to chat with the admin.';
+  // Logged-out visitors might be the owner, so they get a login prompt
+  const canChat = isOwner || !currentAuthUser;
+  chatBtn.style.display = canChat ? '' : 'none';
+  chatBtn.textContent = currentAuthUser
+    ? '💬 Chat with admin' : '💬 Log in to chat with admin';
+  document.getElementById('denied-overlay').style.display = 'flex';
+}
+
+function closeDenied() {
+  document.getElementById('denied-overlay').style.display = 'none';
+  _deniedHandle = null;
+  goHome();
+}
+
+// ═══════════════════════════════════
+// SELLER <-> ADMIN CHAT
+// ═══════════════════════════════════
+let _chatHandle = null;
+let _chatChannel = null;
+let _chatSeen = new Set();
+
+async function openChat(handle) {
+  if (!currentAuthUser) {
+    openAuthModal('login');
+    showToast('Log in as the store owner to chat');
+    return;
+  }
+  _chatHandle = handle;
+  _chatSeen = new Set();
+  const store = allStores.find(x => x.handle === handle);
+  document.getElementById('chat-title').textContent =
+    isAdmin() ? (store?.brand_name || handle) : 'Chat with admin';
+  document.getElementById('chat-sub').textContent = '@' + handle;
+  document.getElementById('chat-msgs').innerHTML =
+    '<div class="chat-empty">Loading…</div>';
+  document.getElementById('chat-overlay').style.display = 'flex';
+
+  const { data, error } = await sb.from('store_messages')
+    .select('*').eq('store_handle', handle)
+    .order('created_at', { ascending: true });
+  if (error) {
+    console.error('Chat load error:', error);
+    document.getElementById('chat-msgs').innerHTML =
+      '<div class="chat-empty">Could not load chat</div>';
+    return;
+  }
+  document.getElementById('chat-msgs').innerHTML = '';
+  if (!data.length) {
+    document.getElementById('chat-msgs').innerHTML =
+      '<div class="chat-empty">No messages yet. Say hello 👋</div>';
+  }
+  data.forEach(addChatBubble);
+
+  if (_chatChannel) sb.removeChannel(_chatChannel);
+  _chatChannel = sb.channel('chat-' + handle)
+    .on('postgres_changes', {
+      event: 'INSERT', schema: 'public', table: 'store_messages',
+      filter: 'store_handle=eq.' + handle
+    }, payload => addChatBubble(payload.new))
+    .subscribe();
+  document.getElementById('chat-input').focus();
+}
+
+function addChatBubble(m) {
+  if (_chatSeen.has(m.id)) return;
+  _chatSeen.add(m.id);
+  const box = document.getElementById('chat-msgs');
+  const empty = box.querySelector('.chat-empty');
+  if (empty) empty.remove();
+  const mine = isAdmin() ? m.sender === 'admin' : m.sender === 'seller';
+  const time = new Date(m.created_at).toLocaleString('en-IN', {
+    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+  });
+  const div = document.createElement('div');
+  div.className = 'chat-msg ' + (mine ? 'mine' : 'theirs');
+  div.innerHTML = `<div class="chat-bubble">${esc(m.body)}</div>
+    <div class="chat-time">${mine ? '' : (m.sender === 'admin' ? 'Admin · ' : 'Seller · ')}${esc(time)}</div>`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+async function sendChat(e) {
+  e.preventDefault();
+  const input = document.getElementById('chat-input');
+  const body = input.value.trim();
+  if (!body || !_chatHandle) return;
+  const btn = document.getElementById('chat-send');
+  btn.disabled = true;
+  const { data, error } = await sb.from('store_messages')
+    .insert({
+      store_handle: _chatHandle,
+      sender: isAdmin() ? 'admin' : 'seller',
+      body
+    }).select().single();
+  btn.disabled = false;
+  if (error) {
+    console.error('Chat send error:', error);
+    showToast('Message not sent — try again');
+    return;
+  }
+  input.value = '';
+  addChatBubble(data);
+}
+
+function closeChat() {
+  document.getElementById('chat-overlay').style.display = 'none';
+  if (_chatChannel) { sb.removeChannel(_chatChannel); _chatChannel = null; }
+  _chatHandle = null;
+  if (isAdmin()) loadAdminChats();
+}
+
+// Admin: every store that has a conversation, newest first
+async function loadAdminChats() {
+  if (!isAdmin()) return;
+  const el = document.getElementById('adm-chats-list');
+  el.innerHTML = '<div class="adm-empty">Loading…</div>';
+  const { data, error } = await sb.from('store_messages')
+    .select('*').order('created_at', { ascending: false }).limit(500);
+  if (error) {
+    console.error('Admin chats error:', error);
+    el.innerHTML = '<div class="adm-empty">Could not load chats</div>';
+    return;
+  }
+  const latest = new Map();
+  data.forEach(m => { if (!latest.has(m.store_handle)) latest.set(m.store_handle, m); });
+  if (!latest.size) {
+    el.innerHTML = '<div class="adm-empty">No chats yet</div>';
+    return;
+  }
+  el.innerHTML = [...latest.values()].map(m => {
+    const store = allStores.find(x => x.handle === m.store_handle);
+    return `<div class="adm-store-row" style="cursor:pointer"
+                 onclick="openChat(${jsArg(m.store_handle)})">
+      <div class="adm-store-emoji">${esc(store?.emoji || '🏪')}</div>
+      <div class="adm-store-info">
+        <div class="adm-store-name">${esc(store?.brand_name || m.store_handle)}${m.sender === 'seller' ? ' <span class="adm-off-tag">Needs reply</span>' : ''}</div>
+        <div class="adm-store-meta"><span>${m.sender === 'admin' ? 'You: ' : ''}${esc(m.body.slice(0, 80))}</span></div>
+      </div>
+    </div>`;
+  }).join('');
 }

@@ -1,0 +1,28 @@
+<!-- Shown to anyone opening a store the admin has disabled -->
+<div id="denied-overlay" class="denied-overlay" style="display:none">
+  <div class="denied-box">
+    <div class="denied-icon">🚫</div>
+    <div class="denied-title serif">Access denied by the admin</div>
+    <p class="denied-sub" id="denied-sub">This store is currently unavailable.</p>
+    <button class="btn-primary" id="denied-chat-btn" onclick="openChat(_deniedHandle)">💬 Chat with admin</button>
+    <button class="denied-home" onclick="closeDenied()">Back to home</button>
+  </div>
+</div>
+
+<!-- Chat window, used by the seller and by the admin -->
+<div id="chat-overlay" class="chat-overlay" style="display:none">
+  <div class="chat-box">
+    <div class="chat-hdr">
+      <div>
+        <div class="chat-title" id="chat-title">Chat with admin</div>
+        <div class="chat-sub" id="chat-sub"></div>
+      </div>
+      <button class="chat-close" onclick="closeChat()" aria-label="Close">✕</button>
+    </div>
+    <div class="chat-msgs" id="chat-msgs"></div>
+    <form class="chat-form" onsubmit="sendChat(event)">
+      <input id="chat-input" type="text" maxlength="1000" autocomplete="off" placeholder="Type your message…">
+      <button type="submit" id="chat-send">Send</button>
+    </form>
+  </div>
+</div>
