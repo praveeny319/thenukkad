@@ -18,7 +18,7 @@ async function loadApplication() {
 
   await new Promise((resolve, reject) => {
     const script = document.createElement('script');
-    script.src = 'src/app.js?v=25';
+    script.src = 'src/app.js?v=26';
     script.onload = resolve;
     script.onerror = () => reject(new Error('Could not load src/app.js'));
     document.body.append(script);

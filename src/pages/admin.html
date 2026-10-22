@@ -80,6 +80,11 @@
               onclick="switchAdminTab('users',this)">
         Users
       </button>
+      <button class="admin-tab"
+              id="adm-tab-chats"
+              onclick="switchAdminTab('chats',this);loadAdminChats()">
+        Chats
+      </button>
     </div>
 
     <!-- Stores panel -->
@@ -99,6 +104,13 @@
          class="admin-panel"
          style="display:none">
       <div id="adm-users-list"></div>
+    </div>
+
+    <!-- Chats panel -->
+    <div id="adm-panel-chats"
+         class="admin-panel"
+         style="display:none">
+      <div id="adm-chats-list"></div>
     </div>
 
   </div>
