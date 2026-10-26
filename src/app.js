@@ -1021,11 +1021,15 @@ async function handleAvatarUpload(event) {
       .from('product-images')
       .getPublicUrl(fileName);
     const logoUrl = urlData.publicUrl;
-    const { error: updateError } = await sb
+    const { data: updateData, error: updateError } = await sb
       .from('stores')
       .update({ logo_url: logoUrl })
-      .eq('handle', curStore.handle);
+      .eq('handle', curStore.handle)
+      .select('handle');
     if (updateError) throw updateError;
+    if (!updateData || updateData.length === 0) {
+      throw new Error('Not saved: you may not have permission for this store');
+    }
     curStore.logo_url = logoUrl;
     avatarSettled = true;
     const avEl = document.getElementById('sv-av');
@@ -1046,7 +1050,8 @@ async function handleAvatarUpload(event) {
     } else {
       avRevert.textContent = curStore.emoji;
     }
-    showToast('Upload failed — please try again');
+    showToast(String(err.message).startsWith('Not saved')
+      ? err.message : 'Upload failed — please try again');
   }
   event.target.value = '';
 }
@@ -1280,13 +1285,16 @@ async function saveCoverPhotos() {
   // Filter out empty slots
   const photos = _coverPhotos.filter(Boolean);
 
-  const { error } = await sb
+  const { data, error } = await sb
     .from('stores')
     .update({ cover_photos: photos })
-    .eq('handle', curStore.handle);
+    .eq('handle', curStore.handle)
+    .select('handle');
 
-  if (error) {
-    showToast('Save failed: ' + error.message);
+  if (error || !data || data.length === 0) {
+    showToast(error
+      ? 'Save failed: ' + error.message
+      : 'Not saved: you may not have permission for this store');
     btn.textContent = 'Save cover';
     btn.disabled = false;
     return;
@@ -1768,12 +1776,18 @@ async function saveStory() {
     'sv-story-input').value.trim();
   if (!story) { showToast('Story cannot be empty'); return; }
 
-  const { error } = await sb
+  const { data, error } = await sb
     .from('stores')
     .update({ story })
-    .eq('handle', curStore.handle);
+    .eq('handle', curStore.handle)
+    .select('handle');
 
-  if (error) { showToast('Save failed — try again'); return; }
+  if (error || !data || data.length === 0) {
+    showToast(error
+      ? 'Save failed — try again'
+      : 'Not saved: you may not have permission for this store');
+    return;
+  }
 
   curStore.story = story;
   const idx = allStores.findIndex(s =>
