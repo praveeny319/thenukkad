@@ -1764,18 +1764,38 @@ function cancelStoryEdit() {
 }
 
 async function saveStory() {
-  if (!curStore || !curStore.handle) return;
+  if (!curStore || !curStore.handle) {
+    console.warn('saveStory: no store open', curStore);
+    showToast('Could not save: no store selected');
+    return;
+  }
   const story = document.getElementById(
     'sv-story-input').value.trim();
   if (!story) { showToast('Story cannot be empty'); return; }
 
-  const { data, error } = await sb
-    .from('stores')
-    .update({ story })
-    .eq('handle', curStore.handle)
-    .select('handle');
+  const saveBtn = document.querySelector('#sv-story-actions button');
+  const setSaving = (on) => {
+    if (!saveBtn) return;
+    saveBtn.disabled = on;
+    saveBtn.textContent = on ? 'Saving…' : 'Save';
+  };
+  setSaving(true);
+
+  let data, error;
+  try {
+    ({ data, error } = await withTimeout(sb
+      .from('stores')
+      .update({ story })
+      .eq('handle', curStore.handle)
+      .select('handle'), 15000));
+  } catch (err) {
+    console.error('saveStory error:', err);
+    error = err;
+  }
+  setSaving(false);
 
   if (error || !data || data.length === 0) {
+    if (error) console.error('saveStory failed:', error);
     showToast(error
       ? 'Save failed — try again'
       : 'Not saved: you may not have permission for this store');
