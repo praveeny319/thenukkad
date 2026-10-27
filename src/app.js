@@ -2354,6 +2354,10 @@ async function generateStoryCard() {
     ? productUrl : storeUrl;
 
   const qrDataUrl = await generateQRDataUrl(qrUrl);
+  if (!qrDataUrl) {
+    console.warn('QR could not be generated');
+    showToast('QR could not be generated, tap Download again');
+  }
 
   if (_storyCardType === 'store') {
     await drawStoreCard(ctx, qrDataUrl);
@@ -2364,38 +2368,61 @@ async function generateStoryCard() {
   loading.style.display = 'none';
 }
 
-function generateQRDataUrl(url) {
-  return new Promise((resolve) => {
-    const div = document.getElementById('qr-gen-div');
-    div.innerHTML = '';
+// qrcodejs paints its <canvas> synchronously but fills its <img> src
+// asynchronously, so read the canvas first and only trust an <img>
+// whose src is already a data URL.
+function readQRDataUrl(div) {
+  const canvas = div.querySelector('canvas');
+  if (canvas) {
     try {
-      const qr = new QRCode(div, {
-        text: url,
-        width: 200,
-        height: 200,
-        colorDark: '#1A0F0A',
-        colorLight: '#FFFFFF',
-        correctLevel: QRCode.CorrectLevel.H
-      });
-      // Wait for QR to render
-      setTimeout(() => {
-        const img = div.querySelector('img') ||
-          div.querySelector('canvas');
-        if (img) {
-          if (img.tagName === 'IMG') {
-            resolve(img.src);
-          } else {
-            resolve(img.toDataURL());
-          }
-        } else {
-          resolve(null);
-        }
-      }, 300);
-    } catch(e) {
-      console.error('QR error:', e);
-      resolve(null);
-    }
+      const d = canvas.toDataURL('image/png');
+      if (d && d.startsWith('data:image')) return d;
+    } catch(e) {}
+  }
+  const img = div.querySelector('img');
+  if (img && img.src && img.src.startsWith('data:')) return img.src;
+  return null;
+}
+
+// Fallback CDN in case cdnjs is blocked or slow (same version, pinned)
+function ensureQRLib() {
+  if (window.QRCode) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    const sc = document.createElement('script');
+    sc.src = 'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js';
+    sc.onload = () => resolve(!!window.QRCode);
+    sc.onerror = () => resolve(false);
+    document.head.appendChild(sc);
   });
+}
+
+async function generateQRDataUrl(url) {
+  if (!(await ensureQRLib())) {
+    console.warn('QR library failed to load');
+    return null;
+  }
+  const div = document.getElementById('qr-gen-div');
+  div.innerHTML = '';
+  try {
+    new QRCode(div, {
+      text: url,
+      width: 200,
+      height: 200,
+      colorDark: '#1A0F0A',
+      colorLight: '#FFFFFF',
+      correctLevel: QRCode.CorrectLevel.H
+    });
+  } catch(e) {
+    console.error('QR error:', e);
+    return null;
+  }
+  // Poll every 50ms, up to ~3s, until a valid data URL exists
+  for (let i = 0; i < 60; i++) {
+    const d = readQRDataUrl(div);
+    if (d) return d;
+    await new Promise(r => setTimeout(r, 50));
+  }
+  return null;
 }
 
 // Get gradient colors from BG array
@@ -4563,9 +4590,13 @@ function fileToBase64(file) {
   });
 }
 
-function showQR() {
+async function showQR() {
   const handle = NS.handle || (curStore && curStore.handle);
   if (!handle) return;
+  if (!(await ensureQRLib())) {
+    showToast('QR could not be loaded, check your connection');
+    return;
+  }
   const url = window.location.origin + window.location.pathname + '?store=' + handle;
   document.getElementById('qr-url-label').textContent = url;
   document.getElementById('qr-canvas').innerHTML = '';
