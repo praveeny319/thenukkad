@@ -2617,31 +2617,32 @@ async function drawProductCard(ctx, qrDataUrl) {
   ctx.letterSpacing = '3px';
   ctx.fillText('NUKKAD ·', 80, 110);
 
-  // Product name — large, below image
+  // Product name — fixed 2-line zone below image, text auto-fits
   const nameY = CARD_H * 0.645;
-  ctx.font = 'bold 108px Georgia, serif';
+  const nameMaxW = CARD_W - 160;
+  const nameFit = fitTextLines(
+    ctx, p?.name || 'Product', nameMaxW, 2, 108, 64);
+  const nameLineH = Math.round(nameFit.fontSize * 136 / 108);
+  // A one-line name sits centred in the 2-line zone
+  const nameOffset = nameFit.lines.length === 1
+    ? Math.round(nameLineH / 2) : 0;
+  ctx.font = 'bold ' + nameFit.fontSize + 'px Georgia, serif';
   ctx.fillStyle = 'white';
   ctx.textAlign = 'left';
   ctx.shadowColor = 'rgba(0,0,0,0.5)';
   ctx.shadowBlur = 20;
-  wrapText(ctx, p?.name || 'Product', 80, nameY, CARD_W - 160, 136);
+  nameFit.lines.forEach((line, i) => {
+    ctx.fillText(line, 80, nameY + nameOffset + i * nameLineH);
+  });
   ctx.shadowBlur = 0;
 
-  // Price — gold, prominent
-  ctx.font = 'bold 124px Georgia, serif';
+  // Price — gold, fixed zone below the name zone, shrinks to fit width
+  const priceFit = fitTextLines(
+    ctx, '₹' + (p?.price || '—'), nameMaxW, 1, 124, 72);
+  ctx.font = 'bold ' + priceFit.fontSize + 'px Georgia, serif';
   ctx.fillStyle = '#C8902A';
   ctx.textAlign = 'left';
-  ctx.fillText('₹' + (p?.price || '—'), 80, CARD_H * 0.765);
-
-  // Description snippet
-  if (p?.description) {
-    ctx.font = '400 46px Plus Jakarta Sans,sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.textAlign = 'left';
-    const desc = p.description.slice(0, 50) +
-      (p.description.length > 50 ? '…' : '');
-    ctx.fillText(desc, 80, CARD_H * 0.82);
-  }
+  ctx.fillText(priceFit.lines[0], 80, CARD_H * 0.80);
 
   // Store name pill top right
   const storeName = curStore?.brand_name || '';
@@ -2699,6 +2700,51 @@ function loadImage(url) {
     img.onerror = reject;
     img.src = url;
   });
+}
+
+// Fit text into at most maxLines lines: step the font down from maxFont
+// to minFont; at minFont, truncate the last line with "…". Breaks words
+// longer than maxWidth by character. Returns { lines, fontSize }.
+function fitTextLines(ctx, text, maxWidth, maxLines, maxFont, minFont,
+                      fontFamily = 'Georgia, serif', weight = 'bold') {
+  const layout = (size) => {
+    ctx.font = weight + ' ' + size + 'px ' + fontFamily;
+    const lines = [];
+    let line = '';
+    const push = () => { lines.push(line); line = ''; };
+    String(text).trim().split(/\s+/).forEach(word => {
+      const test = line ? line + ' ' + word : word;
+      if (ctx.measureText(test).width <= maxWidth) { line = test; return; }
+      if (line) push();
+      // Word alone is too wide: break it by character
+      while (ctx.measureText(word).width > maxWidth) {
+        let n = word.length - 1;
+        while (n > 1 && ctx.measureText(word.slice(0, n)).width > maxWidth) n--;
+        line = word.slice(0, n);
+        push();
+        word = word.slice(n);
+      }
+      line = word;
+    });
+    if (line) push();
+    return lines;
+  };
+  let size = maxFont;
+  let lines = layout(size);
+  while (lines.length > maxLines && size > minFont) {
+    size = Math.max(minFont, size - 4);
+    lines = layout(size);
+  }
+  if (lines.length > maxLines) {
+    lines = lines.slice(0, maxLines);
+    let last = lines[maxLines - 1];
+    while (last.length > 1 &&
+           ctx.measureText(last + '…').width > maxWidth) {
+      last = last.slice(0, -1);
+    }
+    lines[maxLines - 1] = last.trimEnd() + '…';
+  }
+  return { lines, fontSize: size };
 }
 
 // Wrap long text across multiple lines
