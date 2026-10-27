@@ -2283,6 +2283,58 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--paper);color:va
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 
+/* Mobile: whole hero (eyebrow to stats) fits between header (58px) and bottom nav */
+@media(max-width:600px){
+  .lp-hero{
+    --lp-chrome:calc(58px + 55px);
+    min-height:calc(100vh - var(--lp-chrome));
+    min-height:calc(100svh - var(--lp-chrome) - env(safe-area-inset-bottom,0px));
+    display:flex;flex-direction:column;
+    padding:clamp(0.6rem,3vh,2rem) 1.25rem 0;
+    padding-top:clamp(0.6rem,3svh,2rem);
+  }
+  .lp-hero-inner{
+    flex:1;width:100%;
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:space-evenly;
+    gap:clamp(0.3rem,1.2svh,1rem);
+  }
+  .lp-eyebrow{margin:0;padding:0.4rem 0.9rem;font-size:min(0.76rem,2.8vw);white-space:nowrap;max-width:100%;}
+  .lp-title{
+    margin:0;
+    font-size:clamp(1.9rem,min(6vh,13vw),3.4rem);
+    font-size:clamp(1.9rem,min(6svh,13vw),3.4rem);
+    line-height:1;
+  }
+  .lp-subtitle{
+    margin:0 auto;
+    font-size:clamp(0.72rem,1.95vh,0.95rem);
+    font-size:clamp(0.72rem,1.95svh,0.95rem);
+    line-height:1.4;
+  }
+  .lp-cta-row{margin:0;}
+  .lp-btn-main{padding:clamp(0.55rem,1.9svh,1rem) 2rem;}
+  .lp-explore{margin:0;}
+  .lp-btn-explore{min-height:44px;padding:clamp(0.5rem,1.4svh,0.8rem) 1.6rem;}
+  .lp-explore-cap{margin-top:clamp(0.3rem,1svh,0.8rem);}
+  .lp-sample-cards{margin-top:clamp(0.4rem,1.4svh,1.1rem);gap:0.75rem;}
+  .lp-sample-card{
+    padding:clamp(0.4rem,1.5svh,1rem) 0.5rem;
+    gap:clamp(0.3rem,0.9svh,0.6rem);
+  }
+  .lp-sample-logo{
+    width:clamp(34px,7.5svh,64px);height:clamp(34px,7.5svh,64px);
+    font-size:clamp(1.2rem,3svh,1.7rem);
+  }
+  .lp-hero-stats{
+    gap:1rem;
+    padding:clamp(0.5rem,2svh,1.5rem) 0 calc(clamp(0.5rem,2svh,1.5rem) + env(safe-area-inset-bottom,0px));
+  }
+  .lp-stat-num{font-size:clamp(1.2rem,3.4svh,1.5rem);}
+  .lp-stat-label{margin-top:0.15rem;}
+  .lp-stat-div{height:clamp(24px,4.5svh,36px);}
+}
+
 .sv-seller-disclaimer {
   font-size: 0.75rem;
   color: #888;
