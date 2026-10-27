@@ -182,8 +182,43 @@ let productImageFiles = {}; // { prodId: File }
 // ═══════════════════════════════════
 // INIT
 // ═══════════════════════════════════
+// Landing page sample-store cards: fetch logo + name once, never blocks render
+async function loadSampleStoreCards() {
+  try {
+    const rows = await proxyFetch(
+      '/rest/v1/stores?handle=in.(hotheadz,eatfit)' +
+      '&select=handle,brand_name,logo_url');
+    if (!Array.isArray(rows)) return;
+    rows.forEach(r => {
+      const card = document.querySelector(
+        '.lp-sample-card[data-handle="' + r.handle + '"]');
+      if (!card) return;
+      const nameEl = card.querySelector('.lp-sample-name');
+      const logoEl = card.querySelector('.lp-sample-logo');
+      if (r.brand_name) {
+        nameEl.textContent = r.brand_name;
+        if (!r.logo_url) logoEl.textContent =
+          r.brand_name.trim().charAt(0).toUpperCase();
+      }
+      if (r.logo_url) {
+        const img = new Image();
+        img.alt = r.brand_name || '';
+        img.onload = () => {
+          logoEl.textContent = '';
+          logoEl.appendChild(img);
+        };
+        img.src = safeUrl(r.logo_url)
+          .replace(/&amp;/g, '&').replace(/&#39;/g, '%27');
+      }
+    });
+  } catch (e) {
+    console.warn('Sample stores:', e);
+  }
+}
+
 const initializeApp = async () => {
   buildEmojiPicker();
+  loadSampleStoreCards();
 
   // Handle password reset redirect
   const urlParams = new URLSearchParams(window.location.search);

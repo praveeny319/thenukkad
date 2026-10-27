@@ -23,30 +23,31 @@
           Create Your Store Free →
         </button>
       </div>
-      <div class="lp-sample-row">
-        <span class="lp-sample-label">
-          See live stores →
-        </span>
-        <a class="lp-sample-link"
-           href="/?store=hotheadz"
-           onclick="event.preventDefault();
-                    openStore('hotheadz');">
-          Hot Headz 🏎️
-        </a>
-        <a class="lp-sample-link"
-           href="/?store=eatfit"
-           onclick="event.preventDefault();
-                    openStore('eatfit');">
-          Eat Fit 🥗
-        </a>
-      </div>
-      <div class="lp-link-preview">
-        <span class="lp-link-label">
-          Your store link will be:
-        </span>
-        <span class="lp-link-value">
-          thenukkad.store/<em>your-store-name</em>
-        </span>
+      <div class="lp-explore">
+        <button class="lp-btn-explore"
+                onclick="document.getElementById('lp-sample-cards').scrollIntoView({behavior:'smooth',block:'center'})">
+          Explore Sample Stores →
+        </button>
+        <div class="lp-explore-cap">
+          See how it works
+          <span>(Real store profiles)</span>
+        </div>
+        <div class="lp-sample-cards" id="lp-sample-cards">
+          <a class="lp-sample-card" data-handle="hotheadz"
+             href="/?store=hotheadz"
+             onclick="event.preventDefault();
+                      openStore('hotheadz');">
+            <span class="lp-sample-logo">H</span>
+            <span class="lp-sample-name">Hot Headz</span>
+          </a>
+          <a class="lp-sample-card" data-handle="eatfit"
+             href="/?store=eatfit"
+             onclick="event.preventDefault();
+                      openStore('eatfit');">
+            <span class="lp-sample-logo">E</span>
+            <span class="lp-sample-name">Eat Fit</span>
+          </a>
+        </div>
       </div>
     </div>
     <div class="lp-hero-stats">

@@ -128,26 +128,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--paper);color:va
   background:white;
   color:var(--ink);
 }
-.lp-link-preview{
-  display:inline-flex;
-  align-items:center;gap:0.6rem;
-  background:rgba(255,255,255,0.06);
-  border:1px solid rgba(255,255,255,0.1);
-  border-radius:100px;
-  padding:0.5rem 1.1rem;
-  font-size:0.78rem;
-}
-.lp-link-label{
-  color:rgba(255,255,255,0.35);
-}
-.lp-link-value{
-  color:rgba(255,255,255,0.7);
-  font-family:'Plus Jakarta Sans',sans-serif;
-}
-.lp-link-value em{
-  color:var(--gold,#C8902A);
-  font-style:normal;
-}
 .lp-hero-stats{
   display:flex;
   align-items:center;
@@ -2224,46 +2204,83 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--paper);color:va
   border-color:var(--ink);
 }
 
-.lp-sample-row{
-  display:flex;
+.lp-explore{
+  display:flex;flex-direction:column;
   align-items:center;
-  justify-content:center;
-  gap:0.6rem;
-  flex-wrap:wrap;
-  margin-top:1.4rem;
-  margin-bottom:1rem;
-  background:rgba(255,255,255,0.05);
-  border:1px solid rgba(255,255,255,0.08);
-  border-radius:100px;
-  padding:0.5rem 1.2rem;
-  width:fit-content;
-  margin-left:auto;
-  margin-right:auto;
+  margin-top:0.2rem;
 }
-.lp-sample-label{
-  font-size:0.76rem;
-  color:rgba(255,255,255,0.55);
-  font-family:'Plus Jakarta Sans',sans-serif;
-  font-weight:500;
-  white-space:nowrap;
-}
-.lp-sample-link{
-  font-size:0.78rem;
-  font-weight:700;
+.lp-btn-explore{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-height:48px;
+  background:rgba(200,144,42,0.12);
   color:var(--gold,#C8902A);
+  border:1.5px solid var(--gold,#C8902A);
   font-family:'Plus Jakarta Sans',sans-serif;
-  text-decoration:none;
-  transition:all 0.2s;
+  font-size:0.9rem;font-weight:700;
+  padding:0.8rem 1.8rem;
+  border-radius:100px;
   cursor:pointer;
-  white-space:nowrap;
+  box-shadow:0 0 22px rgba(200,144,42,0.28);
+  transition:all 0.25s;
 }
-.lp-sample-link:hover{
+.lp-btn-explore:hover{
+  background:var(--gold,#C8902A);
   color:white;
+  transform:translateY(-2px);
+  box-shadow:0 0 30px rgba(200,144,42,0.45);
 }
-.lp-sample-link + .lp-sample-link::before{
-  content:'·';
-  color:rgba(255,255,255,0.2);
-  margin-right:0.6rem;
+.lp-explore-cap{
+  margin-top:0.8rem;
+  font-size:0.8rem;font-weight:600;
+  color:rgba(255,255,255,0.7);
+  font-family:'Plus Jakarta Sans',sans-serif;
+}
+.lp-explore-cap span{
+  font-size:0.7rem;font-weight:400;
+  color:rgba(255,255,255,0.4);
+  margin-left:0.25rem;
+}
+.lp-sample-cards{
+  display:flex;justify-content:center;
+  gap:0.9rem;
+  margin-top:1.1rem;
+  width:100%;max-width:100%;
+}
+.lp-sample-card{
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:0.6rem;
+  flex:0 1 150px;min-width:0;min-height:44px;
+  padding:1rem 0.6rem;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:16px;
+  box-shadow:0 6px 20px rgba(0,0,0,0.25);
+  text-decoration:none;cursor:pointer;
+  transition:transform 0.2s,box-shadow 0.2s,border-color 0.2s;
+}
+.lp-sample-card:hover{
+  transform:translateY(-4px);
+  border-color:rgba(200,144,42,0.5);
+  box-shadow:0 12px 28px rgba(0,0,0,0.35);
+}
+.lp-sample-logo{
+  width:64px;height:64px;border-radius:50%;
+  overflow:hidden;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--gold,#C8902A);color:white;
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.7rem;font-weight:700;
+}
+.lp-sample-logo img{
+  width:100%;height:100%;object-fit:cover;display:block;
+}
+.lp-sample-name{
+  max-width:100%;
+  font-size:0.82rem;font-weight:700;
+  color:white;text-align:center;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 
 .sv-seller-disclaimer {
