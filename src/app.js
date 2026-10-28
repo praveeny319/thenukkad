@@ -2570,7 +2570,7 @@ async function drawProductCard(ctx, qrDataUrl) {
       const bgX = (CARD_W - bgW) / 2;
       const bgY = (imgH - bgH) / 2;
       ctx.save();
-      ctx.filter = 'blur(20px) brightness(0.6)';
+      ctx.filter = 'blur(24px) brightness(1)';
       ctx.drawImage(img, bgX, bgY, bgW, bgH);
       ctx.filter = 'none';
       ctx.restore();
@@ -2582,16 +2582,26 @@ async function drawProductCard(ctx, qrDataUrl) {
       const dh = img.height * containScale;
       const dx = (CARD_W - dw) / 2;
       const dy = (imgH - dh) / 2;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, dx, dy, dw, dh);
 
       ctx.restore();
 
-      // Deeper gradient fade for cleaner transition
-      const fade = ctx.createLinearGradient(0, imgH * 0.6, 0, imgH + 40);
+      // Very light top scrim so the white header text stays readable
+      const topScrim = ctx.createLinearGradient(0, 0, 0, 260);
+      topScrim.addColorStop(0, 'rgba(0,0,0,0.28)');
+      topScrim.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = topScrim;
+      ctx.fillRect(0, 0, CARD_W, 260);
+
+      // Thin fade at the very bottom edge — handoff to the dark text area
+      const fadeStart = imgH - Math.round(imgH * 0.11);
+      const fade = ctx.createLinearGradient(0, fadeStart, 0, imgH);
       fade.addColorStop(0, 'rgba(13,9,5,0)');
       fade.addColorStop(1, 'rgba(13,9,5,1)');
       ctx.fillStyle = fade;
-      ctx.fillRect(0, imgH * 0.6, CARD_W, imgH * 0.4 + 40);
+      ctx.fillRect(0, fadeStart, CARD_W, imgH - fadeStart);
     } catch(e) {
       // No image — use store gradient
       ctx.fillStyle = getStoreGradient(ctx);
@@ -2615,7 +2625,10 @@ async function drawProductCard(ctx, qrDataUrl) {
   ctx.fillStyle = 'rgba(255,255,255,0.5)';
   ctx.textAlign = 'left';
   ctx.letterSpacing = '3px';
+  ctx.shadowColor = 'rgba(0,0,0,0.45)';
+  ctx.shadowBlur = 8;
   ctx.fillText('NUKKAD ·', 80, 110);
+  ctx.shadowBlur = 0;
 
   // Product name — fixed 2-line zone below image, text auto-fits
   const nameY = CARD_H * 0.645;
@@ -2658,7 +2671,10 @@ async function drawProductCard(ctx, qrDataUrl) {
   ctx.fill();
   ctx.fillStyle = 'rgba(255,255,255,0.8)';
   ctx.textAlign = 'left';
+  ctx.shadowColor = 'rgba(0,0,0,0.45)';
+  ctx.shadowBlur = 8;
   ctx.fillText(storeName, snX + snPad, snY + 54);
+  ctx.shadowBlur = 0;
 
   // QR code bottom left
   if (qrDataUrl) {
