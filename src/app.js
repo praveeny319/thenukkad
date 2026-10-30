@@ -379,8 +379,15 @@ const initializeApp = async () => {
     await loadCustomerProfile(customerParam);
 
   } else {
-    await loadStores();
-    await initAuth();
+    // Show the first page right away; the store list
+    // and login state fill in from the background.
+    console.time('home: first page shown');
+    console.time('home: loadStores');
+    console.time('home: initAuth');
+    const storesP = loadStores().catch(console.warn)
+      .finally(() => console.timeEnd('home: loadStores'));
+    const authP = initAuth().catch(console.warn)
+      .finally(() => console.timeEnd('home: initAuth'));
 
     const lastRaw = localStorage.getItem(
       'nukkad_last_page');
@@ -389,11 +396,18 @@ const initializeApp = async () => {
 
     if (last && last.page === 'store' &&
         last.store) {
-      const s = allStores.find(
-        x => x.handle === last.store);
-      if (s) {
-        await openStore(last.store);
-      } else {
+      // Needs the store's data and the login state
+      // (owner buttons), so wait for just those.
+      try {
+        const [s] = await Promise.all([
+          ensureStoreLoaded(last.store), authP]);
+        if (s) {
+          await openStore(last.store);
+        } else {
+          showPg('home');
+        }
+      } catch(e) {
+        console.warn('Could not restore last store:', e);
         showPg('home');
       }
     } else if (last && last.page &&
@@ -403,6 +417,7 @@ const initializeApp = async () => {
     } else {
       showPg('home');
     }
+    console.timeEnd('home: first page shown');
 
     if (window.location.search) {
       history.replaceState(
@@ -414,11 +429,9 @@ const initializeApp = async () => {
   }
 };
 
-if (document.readyState === 'complete') {
-  window.setTimeout(initializeApp, 0);
-} else {
-  window.addEventListener('load', initializeApp, { once: true });
-}
+// app.js is injected after the page fragments are in the
+// DOM, so there is no need to wait for the window load event.
+window.setTimeout(initializeApp, 0);
 
 window.addEventListener('popstate', (e) => {
   // Photo viewer open — back only closes the viewer
@@ -562,6 +575,11 @@ async function loadMyOrders() {
   }
 }
 
+// Stores in allStores that hold only the market-card fields
+// (no full product rows). openStore / ensureStoreLoaded
+// fetch the rest when the store is opened.
+const _slimStores = new WeakSet();
+
 async function loadStores() {
   try {
     const timeout = new Promise((_, reject) =>
@@ -569,17 +587,28 @@ async function loadStores() {
         new Error('timeout')), 8000));
     const fetchReq = sb
       .from('stores')
-      .select('*, products(*)')
+      .select('handle, brand_name, emoji, logo_url, tagline, category, city, area, bg_idx, created_at, products(id, name, is_hidden)')
       .order('created_at', { ascending: false });
     const { data: storesData, error } =
       await Promise.race([fetchReq, timeout]);
     if (error) throw error;
-    const dbHandles = (storesData || [])
+    // Keep stores already loaded in full (store link,
+    // restored store) instead of replacing them with slim rows
+    const loadedFull = new Map(allStores
+      .filter(x => x.products && !_slimStores.has(x))
+      .map(x => [x.handle, x]));
+    const rows = (storesData || []).map(r => {
+      const full = loadedFull.get(r.handle);
+      if (full) return full;
+      _slimStores.add(r);
+      return r;
+    });
+    const dbHandles = rows
       .map(s => s.handle);
     const seedsToShow = SEEDS.filter(
       s => !dbHandles.includes(s.handle));
     allStores = [
-      ...(storesData || []),
+      ...rows,
       ...seedsToShow
     ];
   } catch(e) {
@@ -875,6 +904,24 @@ async function openStore(handle) {
   // Skipped when the store came fresh from a store link
   if (_linkFetchedStores.has(s)) {
     _linkFetchedStores.delete(s);
+  } else if (_slimStores.has(s)) {
+    // Opened from the market list: only card fields are in
+    // memory, so fetch the full store with its products.
+    try {
+      const { data: fullStore, error: fullErr } = await withTimeout(sb
+        .from('stores')
+        .select('*, products(*)')
+        .eq('handle', handle)
+        .single(), 10000);
+      if (fullErr) throw fullErr;
+      Object.assign(s, fullStore);
+      s.products = fullStore.products || [];
+      _slimStores.delete(s);
+    } catch(e) {
+      console.warn('Could not load store:', e);
+      showToast('Could not load store — please try again');
+      return;
+    }
   } else try {
     // Capped so a slow network never blocks opening —
     // we fall back to the data already in memory
@@ -5145,7 +5192,7 @@ function renderMyStores(storeWrap, myList) {
 // loading in the background (e.g. after a ?store= link).
 async function ensureStoreLoaded(handle) {
   const existing = allStores.find(x => x.handle === handle);
-  if (existing && existing.products) return existing;
+  if (existing && existing.products && !_slimStores.has(existing)) return existing;
   const { data, error } = await withTimeout(sb
     .from('stores')
     .select('*, products(*)')
@@ -5155,7 +5202,7 @@ async function ensureStoreLoaded(handle) {
   if (!data) return null;
   // allStores may have been refilled while we waited
   const fresh = allStores.find(x => x.handle === handle);
-  if (fresh && fresh.products) return fresh;
+  if (fresh && fresh.products && !_slimStores.has(fresh)) return fresh;
   data.products = data.products || [];
   const i = allStores.findIndex(x => x.handle === handle);
   if (i > -1) allStores[i] = data;

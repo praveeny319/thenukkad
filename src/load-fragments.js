@@ -1,3 +1,12 @@
+// Download app.js in parallel with the fragments; it still
+// runs only after the fragments are in the DOM.
+const APP_SRC = 'src/app.js?v=32';
+const appPreload = document.createElement('link');
+appPreload.rel = 'preload';
+appPreload.as = 'script';
+appPreload.href = APP_SRC;
+document.head.append(appPreload);
+
 async function loadApplication() {
   const placeholders = [...document.querySelectorAll('[data-include]')];
   const fragments = await Promise.all(placeholders.map(async (placeholder) => {
@@ -18,7 +27,7 @@ async function loadApplication() {
 
   await new Promise((resolve, reject) => {
     const script = document.createElement('script');
-    script.src = 'src/app.js?v=31';
+    script.src = APP_SRC;
     script.onload = resolve;
     script.onerror = () => reject(new Error('Could not load src/app.js'));
     document.body.append(script);
