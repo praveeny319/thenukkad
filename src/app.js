@@ -240,24 +240,74 @@ const initializeApp = async () => {
     // iOS Safari/Chrome bug: getSession() returns
     // null on first load. Public store data does
     // NOT need auth — fetch immediately.
-    // Run auth and loadStores in background.
-    loadStores().catch(console.warn);
-    initAuth().catch(console.warn);
+    // loadStores/initAuth start only after the
+    // store has rendered (see below).
+    console.log('store-link: start', Math.round(performance.now()) + 'ms since navigation');
+    console.time('store-link: data ready');
+    console.time('store-link: rendered');
 
-    // Small delay to let Supabase client init
-    await new Promise(r => setTimeout(r, 100));
+    // Loading state in the store view — no welcome-page flash
+    document.querySelectorAll('.pg').forEach(
+      p => p.classList.remove('on'));
+    document.getElementById('pg-store').classList.add('on');
+    const _svCover = document.getElementById('sv-cover');
+    const _svGrid = document.getElementById('sv-prod-grid');
+    const _bgc = BG[0];
+    if (_svCover) {
+      _svCover.style.background =
+        `linear-gradient(135deg, ${_bgc[0]}, ${_bgc[1]}, ${_bgc[2]}, ${_bgc[3]}, ${_bgc[0]})`;
+    }
+    if (_svGrid) {
+      _svGrid.innerHTML = [0, 1, 2, 3].map(() =>
+        '<div class="sv-skel" style="height:240px;border-radius:12px;background:rgba(128,128,128,0.18);"></div>'
+      ).join('');
+      _svGrid.querySelectorAll('.sv-skel').forEach(el =>
+        el.animate([{ opacity: 0.5 }, { opacity: 1 }, { opacity: 0.5 }],
+          { duration: 1200, iterations: Infinity }));
+    }
 
     try {
       // Use Cloudflare Worker proxy
       // Safari sees thenukkad.store — first party
       // ITP cannot block it
-      const stores = await proxyFetch(
-        '/rest/v1/stores?handle=eq.' +
-        encodeURIComponent(storeParam) +
-        '&select=*'
-      );
-      const freshStore = Array.isArray(stores)
-        ? stores[0] : null;
+      // One request: store + its non-hidden products.
+      // If the proxy rejects the embed, fall back to
+      // two parallel requests.
+      let freshStore;
+      try {
+        const stores = await proxyFetch(
+          '/rest/v1/stores?handle=eq.' +
+          encodeURIComponent(storeParam) +
+          '&select=*,products(*)' +
+          '&products.is_hidden=not.is.true' +
+          '&products.order=created_at.asc'
+        );
+        freshStore = Array.isArray(stores)
+          ? stores[0] : null;
+        if (freshStore) {
+          freshStore.products = Array.isArray(freshStore.products)
+            ? freshStore.products.filter(p => !p.is_hidden) : [];
+        }
+      } catch(embedErr) {
+        console.warn('Combined store fetch failed, using two requests:', embedErr);
+        const [stores, products] = await Promise.all([
+          proxyFetch(
+            '/rest/v1/stores?handle=eq.' +
+            encodeURIComponent(storeParam) +
+            '&select=*'),
+          proxyFetch(
+            '/rest/v1/products?store_handle=eq.' +
+            encodeURIComponent(storeParam) +
+            '&select=*&order=created_at.asc')
+        ]);
+        freshStore = Array.isArray(stores)
+          ? stores[0] : null;
+        if (freshStore) {
+          freshStore.products = Array.isArray(products)
+            ? products.filter(p => !p.is_hidden) : [];
+        }
+      }
+      console.timeEnd('store-link: data ready');
 
       if (!freshStore) {
         await loadStores();
@@ -267,28 +317,29 @@ const initializeApp = async () => {
         return;
       }
 
-      // Fetch products via proxy
-      const products = await proxyFetch(
-        '/rest/v1/products?store_handle=eq.' +
-        encodeURIComponent(storeParam) +
-        '&select=*&order=created_at.asc'
-      );
-      freshStore.products = Array.isArray(products)
-        ? products.filter(p => !p.is_hidden) : [];
+      // Start downloading cover + logo images now
+      [freshStore.logo_url, ...(freshStore.cover_photos || [])]
+        .forEach(u => {
+          if (typeof u === 'string' && /^https?:/i.test(u)) {
+            new Image().src = u;
+          }
+        });
 
       // Update cache
       const ei = allStores.findIndex(
         s => s.handle === storeParam);
       if (ei > -1) allStores[ei] = freshStore;
       else allStores.push(freshStore);
+      _linkFetchedStores.add(freshStore);
 
       // Open store immediately
       await openStore(storeParam);
+      console.timeEnd('store-link: rendered');
       if (productParam) {
         openProductDetail(storeParam, productParam);
       }
 
-      // Load auth in background
+      // Load auth in background, after first render
       loadStores().catch(console.warn);
       initAuth().catch(console.warn);
 
@@ -800,6 +851,9 @@ const STORE_STORIES = {
   'Herbal Products': 'My grandmother had a remedy for everything. I spent years learning those recipes — and now I make them available to anyone who wants to go back to basics.',
 };
 
+// Store objects fetched in full by a ?store= link
+const _linkFetchedStores = new WeakSet();
+
 async function openStore(handle) {
   const s = allStores.find(x => x.handle === handle);
   if (!s) return;
@@ -818,7 +872,10 @@ async function openStore(handle) {
     JSON.stringify({ page: 'store', store: handle }));
 
   // Fetch live status from Supabase (real-time toggle)
-  try {
+  // Skipped when the store came fresh from a store link
+  if (_linkFetchedStores.has(s)) {
+    _linkFetchedStores.delete(s);
+  } else try {
     // Capped so a slow network never blocks opening —
     // we fall back to the data already in memory
     const { data: freshStore, error: fetchErr } = await withTimeout(sb
