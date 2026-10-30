@@ -36,14 +36,14 @@
           <a class="lp-sample-card" data-handle="hotheadz"
              href="/?store=hotheadz"
              onclick="event.preventDefault();
-                      openStore('hotheadz');">
+                      ensureStoreLoaded('hotheadz').then(function(s){ if (s) openStore('hotheadz'); else showToast('Store not found'); }).catch(function(){ showToast('Could not load store'); });">
             <span class="lp-sample-logo">H</span>
             <span class="lp-sample-name">Hot Headz</span>
           </a>
           <a class="lp-sample-card" data-handle="eatfit"
              href="/?store=eatfit"
              onclick="event.preventDefault();
-                      openStore('eatfit');">
+                      ensureStoreLoaded('eatfit').then(function(s){ if (s) openStore('eatfit'); else showToast('Store not found'); }).catch(function(){ showToast('Could not load store'); });">
             <span class="lp-sample-logo">E</span>
             <span class="lp-sample-name">Eat Fit</span>
           </a>
